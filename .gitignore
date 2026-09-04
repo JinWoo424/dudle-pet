@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnpm-store/
+.pnp/
+.pnp.*
+
+# Next.js / tests
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+
+# environment and secrets
+.env
+.env.local
+.env.production
+.env.*.local
+*.pem
+*.key
+
+# local tooling
+.DS_Store
+Thumbs.db
+*.log
+*.tsbuildinfo
+.vercel/
+
+# generated data
+docs/api-samples/*.live.json
