@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.17.1",
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "next dev",
@@ -16,12 +16,18 @@
     "test:watch": "vitest --configLoader runner",
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:health": "tsx scripts/db-health.ts",
+    "import:regions": "tsx scripts/import-regions.ts",
+    "import:fees": "tsx scripts/import-fees.ts",
     "inspect:public-api": "tsx scripts/inspect-public-api.ts",
     "sync:hospitals": "tsx scripts/sync.ts hospital",
     "sync:pharmacies": "tsx scripts/sync.ts pharmacy",
     "sync:funerals": "tsx scripts/sync.ts funeral",
     "sync:all": "tsx scripts/sync.ts all",
+    "sync:approve": "tsx scripts/approve-import.ts",
+    "seo:refresh": "tsx scripts/refresh-seo.ts",
+    "scan:secrets": "node scripts/scan-secrets.mjs",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {

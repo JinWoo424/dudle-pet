@@ -8,6 +8,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   real,
   serial,
   text,
@@ -188,6 +189,8 @@ export const userReports = pgTable("user_reports", {
 });
 
 export const seoPages = pgTable("seo_pages", {
+  manualHold: boolean("manual_hold").default(false).notNull(),
+  lowDataSince: timestamp("low_data_since", { withTimezone: true }),
   id: uuid("id").defaultRandom().primaryKey(), pageType: text("page_type").notNull(), facilityType: facilityType("facility_type"), regionId: integer("region_id").references(() => regions.id), featureType: text("feature_type"),
   resultCount: integer("result_count").default(0).notNull(), pageQualityScore: integer("page_quality_score").default(0).notNull(), seoStatus: seoStatus("seo_status").default("NOINDEX_LOW_DATA").notNull(),
   monetizationStatus: monetizationStatus("monetization_status").default("OFF").notNull(), canonicalUrl: text("canonical_url").notNull(), generatedAt: timestamp("generated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -210,3 +213,20 @@ export const seoKeywordMetrics = pgTable("seo_keyword_metrics", {
   position: real("position"), adsenseRpm: integer("adsense_rpm"), opportunityScore: real("opportunity_score"), updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const requestRateLimits = pgTable("request_rate_limits", {
+  keyHash: text("key_hash").notNull(), bucket: bigint("bucket",{mode:"number"}).notNull(),
+  attempts: integer("attempts").default(1).notNull(), expiresAt: timestamp("expires_at",{withTimezone:true}).notNull(),
+}, table=>[primaryKey({columns:[table.keyHash,table.bucket]}),index("request_rate_limits_expiry_idx").on(table.expiresAt)]);
+
+export const syncSourceSnapshots = pgTable("sync_source_snapshots",{
+  id:uuid("id").defaultRandom().primaryKey(),sourceType:text("source_type").notNull(),
+  syncRunId:uuid("sync_run_id").references(()=>syncRuns.id).notNull(),recordCount:integer("record_count").notNull(),
+  complete:boolean("complete").default(false).notNull(),contractChecksum:text("contract_checksum").notNull(),
+  approvedAt:timestamp("approved_at",{withTimezone:true}),approvedBy:text("approved_by"),
+  createdAt:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
+});
+export const facilitySourcePresence = pgTable("facility_source_presence",{
+  facilityId:uuid("facility_id").primaryKey().references(()=>facilities.id),sourceType:text("source_type").notNull(),
+  lastSnapshotId:uuid("last_snapshot_id").references(()=>syncSourceSnapshots.id),
+  missingStreak:integer("missing_streak").default(0).notNull(),lastSeenAt:timestamp("last_seen_at",{withTimezone:true}),
+});

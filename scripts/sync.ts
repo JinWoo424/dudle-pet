@@ -1,18 +1,15 @@
+import "./env";
 import { publicAdapters } from "../src/data/adapters/mois";
-
-const requested = process.argv[2] ?? "all";
-const map = { hospital: "ANIMAL_HOSPITAL", pharmacy: "ANIMAL_PHARMACY", funeral: "PET_FUNERAL" } as const;
-
-async function main() {
-  if (process.env.USE_MOCK_DATA !== "false" || !process.env.DATABASE_URL) {
-    console.log(`[mock] ${requested} sync 구조 검증 완료. DB나 실제 API는 변경하지 않았습니다.`);
-    return;
-  }
-  const targets = requested === "all" ? publicAdapters : publicAdapters.filter((adapter) => adapter.facilityType === map[requested as keyof typeof map]);
-  for (const adapter of targets) {
-    console.log(`${adapter.sourceType}: sample inspection과 mapping 확정 전 destructive sync는 차단됩니다.`);
-  }
+import { sourceFiles } from "../src/data/adapters/contract";
+import { syncSource } from "../src/data/sync";
+import { closeSql } from "../src/db/connection";
+async function main(){
+ const requested=process.argv[2]??"all";const stage=process.argv.includes("--full")?"full":"sample100";
+ const targets=publicAdapters.filter(a=>requested==="all"||sourceFiles[a.sourceType]===requested);
+ if(!targets.length)throw new Error("INVALID_SOURCE");
+ let failed=false;
+ try{for(const adapter of targets){try{console.log(JSON.stringify(await syncSource(adapter,stage)));}catch{failed=true;console.error(`${adapter.sourceType}: sync blocked or failed; inspect configuration and sync_runs. Existing facilities are preserved on failed transactions.`);}}}
+ finally{await closeSql();}
+ if(failed)process.exitCode=1;
 }
-
-main().catch((error) => { console.error(error); process.exitCode = 1; });
-
+main().catch(()=>{console.error("Sync could not run. No successful import is claimed.");process.exitCode=1;});

@@ -6,6 +6,7 @@ node_modules/
 
 # Next.js / tests
 .next/
+.next-e2e/
 out/
 coverage/
 playwright-report/
@@ -16,6 +17,8 @@ test-results/
 .env.local
 .env.production
 .env.*.local
+.env.*
+!.env.example
 *.pem
 *.key
 

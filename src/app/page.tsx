@@ -24,7 +24,7 @@ export default function HomePage() {
         <div className="shell hero-grid">
           <div>
             <span className="eyebrow">공식 데이터로 찾는 반려생활 정보</span>
-            <h1>우리 동네 동물병원과 진료비를 한 번에</h1>
+            <h1>우리 동네 동물병원과<br />진료비를 한 번에 확인하세요</h1>
             <p className="hero-lede">병원 이름만 나열하지 않습니다. 공식 등록 상태, 검증 정보, 위치와 지역 진료비 통계를 구분해 보여드립니다.</p>
             <HomeSearch />
             <div className="hero-actions">
@@ -95,4 +95,3 @@ export default function HomePage() {
     </>
   );
 }
-

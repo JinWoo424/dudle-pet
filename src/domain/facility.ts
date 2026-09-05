@@ -10,9 +10,11 @@ export interface FacilityFeatureSet {
   verificationStatus: "VALID" | "EXPIRING" | "EXPIRED" | "UNVERIFIED";
   verifiedAt?: string;
   sourceLabel?: string;
+  sourceUrl?: string;
 }
 
 export interface FacilityView {
+  verifications?: Array<{fieldName:string;fieldValue:string;sourceType:string;sourceUrl?:string;evidenceNote?:string;verifiedAt:string;expiresAt:string}>;
   id: string;
   type: FacilityKind;
   name: string;
@@ -27,6 +29,9 @@ export interface FacilityView {
   businessStatus: "OPEN" | "CLOSED" | "TEMP_CLOSED" | "SUSPENDED" | "UNKNOWN";
   sourceName: string;
   sourceDate: string;
+  regionSlug?: string;
+  syncedAt?: string;
+  updatedAt?: string;
   features: FacilityFeatureSet;
   distanceMeters?: number;
 }
@@ -43,5 +48,9 @@ export interface FeeStatisticView {
   maximumPrice: number | null;
   sampleCount: number | null;
   sourceName: string;
+  sourceUrl?: string;
+  sourceDate?: string;
+  regionSlug?: string;
+  animalType?: string;
+  weightClass?: string;
 }
-

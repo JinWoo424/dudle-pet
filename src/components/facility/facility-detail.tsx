@@ -1,37 +1,32 @@
-import Script from "next/script";
 import Link from "next/link";
-import { BadgeCheck, CalendarClock, MapPin, Navigation, Phone, ShieldCheck } from "lucide-react";
+import { MapPin, Navigation, Phone, ShieldCheck } from "lucide-react";
 import type { FacilityView } from "@/domain/facility";
-import { listFacilities, listFeeStatistics } from "@/data/repository";
+import { nearbyFacilities, listFeeStatistics } from "@/data/repository";
 import { KakaoMap } from "@/components/map/kakao-map";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
+import { MockNotice } from "@/components/data/mock-notice";
 import { FacilityCard } from "./facility-card";
 import { formatWon } from "@/lib/format";
-
-export async function FacilityDetail({ facility, typeLabel = "동물병원", typePath = "hospital" }: { facility: FacilityView; typeLabel?: string; typePath?: string }) {
-  const all = await listFacilities();
-  const nearbyPharmacies = all.filter((item) => item.type === "ANIMAL_PHARMACY").slice(0, 2);
-  const otherHospitals = all.filter((item) => item.type === "ANIMAL_HOSPITAL" && item.id !== facility.id).slice(0, 2);
-  const fee = (await listFeeStatistics("xray")).find((item) => item.regionLevel === "CITY");
-  const structured = { "@context": "https://schema.org", "@type": "LocalBusiness", name: facility.name, address: facility.roadAddress, telephone: facility.phone, url: `https://pet.dudle.co.kr/hospital/jeonnam/yeosu/${facility.id}`, ...(facility.latitude && facility.longitude ? { geo: { "@type": "GeoCoordinates", latitude: facility.latitude, longitude: facility.longitude } } : {}) };
-  return (
-    <div className="shell detail-page">
-      <Script id="facility-structured-data" type="application/ld+json">{JSON.stringify(structured)}</Script>
-      <Breadcrumbs items={[{ label: typeLabel, href: `/${typePath}` }, { label: "여수", href: `/${typePath}/jeonnam/yeosu` }, { label: facility.name }]} />
-      <section className="detail-hero card">
-        <div><span className="status-open"><span />공식 등록상 영업</span><h1>{facility.name}</h1><p className="address"><MapPin size={18} />{facility.roadAddress}</p></div>
-        <div className="detail-cta">{facility.phone && <a className="primary-button" href={`tel:${facility.phone}`}><Phone size={18} />전화하기</a>}<a className="secondary-button" href={`https://map.kakao.com/link/search/${encodeURIComponent(facility.roadAddress)}`} target="_blank" rel="noreferrer"><Navigation size={18} />길찾기</a></div>
-      </section>
-      <div className="detail-grid">
-        <div className="detail-main">
-          <section className="card detail-section"><h2><ShieldCheck size={21} />공식 등록정보</h2><dl className="info-grid"><div><dt>영업 상태</dt><dd>공식 등록상 영업</dd></div><div><dt>전화번호</dt><dd>{facility.phone ?? "정보 없음"}</dd></div><div><dt>주소</dt><dd>{facility.roadAddress}</dd></div><div><dt>데이터 기준일</dt><dd>{facility.sourceDate}</dd></div></dl></section>
-          <section className="card detail-section"><h2><BadgeCheck size={21} />두들펫 확인정보</h2>{facility.features.verificationStatus === "VALID" ? <><div className="tag-row">{facility.features.open24h === "YES" && <span className="pill">24시간</span>}{facility.features.nightService === "YES" && <span className="pill">야간 진료</span>}{facility.features.exoticService === "YES" && <span className="pill">특수동물</span>}{facility.features.parkingAvailable === "YES" && <span className="pill">주차</span>}</div><p className="evidence"><CalendarClock size={16} />{facility.features.verifiedAt} 확인 · {facility.features.sourceLabel}</p></> : <p className="muted">추가 운영정보는 아직 확인되지 않았습니다. 미확인은 ‘아니오’가 아닙니다.</p>}</section>
-          <section className="card detail-section"><h2>지도</h2><KakaoMap facilities={[facility]} /></section>
-          <section className="card detail-section"><div className="section-heading"><div><span className="eyebrow">지역 통계</span><h2>여수 지역 X-ray 진료비</h2></div><Link className="text-link" href="/cost/jeonnam/yeosu/xray">자세히</Link></div><div className="stat-highlight"><span>중간값</span><strong>{formatWon(fee?.medianPrice ?? null)}</strong></div><p className="quality-note">이 병원의 실제 진료비가 아닌 여수 지역 통계입니다.</p></section>
-          <section className="card detail-section"><h2>정보수정 요청</h2><p className="muted">전화번호, 주소, 운영시간이나 서비스 정보가 다르면 알려주세요.</p><Link className="secondary-button" href={`/report?facility=${facility.id}`}>정보수정 요청</Link></section>
-        </div>
-        <aside className="detail-aside"><section><h2>주변 동물약국</h2>{nearbyPharmacies.map((item) => <FacilityCard facility={item} compact key={item.id} />)}</section><section><h2>가까운 다른 병원</h2>{otherHospitals.map((item) => <FacilityCard facility={item} compact key={item.id} />)}</section></aside>
-      </div>
-    </div>
-  );
+import { directionsUrl, facilityPath, safeJson, statusLabels } from "@/lib/facility-display";
+export async function FacilityDetail({facility,typeLabel="동물병원",typePath="hospital"}:{facility:FacilityView;typeLabel?:string;typePath?:string}) {
+ const hasCoordinates=facility.latitude!=null&&facility.longitude!=null;
+ const around=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,excludeId:facility.id}):[];
+ const fees=facility.regionSlug?await listFeeStatistics("xray",facility.regionSlug):[];
+ const fee=fees.find(f=>f.regionSlug===facility.regionSlug && f.regionLevel==="CITY");
+ const region=[facility.province,facility.city,facility.district].filter(Boolean).join(" ");
+ const path=facilityPath(facility);
+ const structured={"@context":"https://schema.org","@type":"LocalBusiness",name:facility.name,address:facility.roadAddress,...(facility.phone?{telephone:facility.phone}:{}),...(path?{url:new URL(path,process.env.NEXT_PUBLIC_SITE_URL||"https://pet.dudle.co.kr").href}:{}),...(hasCoordinates?{geo:{"@type":"GeoCoordinates",latitude:facility.latitude,longitude:facility.longitude}}:{})};
+ return <div className="shell detail-page">
+ <script type="application/ld+json" dangerouslySetInnerHTML={{__html:safeJson(structured)}}/>
+ <Breadcrumbs items={[{label:typeLabel,href:`/${typePath}`},...(facility.regionSlug?[{label:region,href:`/${typePath}/${facility.regionSlug}`}]:[]),{label:facility.name}]}/>
+ <section className="detail-hero card"><div><span className="status-open">{statusLabels[facility.businessStatus]}</span><h1>{facility.name}</h1><p className="address"><MapPin size={18}/>{facility.roadAddress||"주소 미확인"}</p></div><div className="detail-cta">{facility.phone&&<a className="primary-button" href={`tel:${facility.phone}`}><Phone size={18}/>전화하기</a>}<a className="secondary-button" href={directionsUrl(facility)} target="_blank" rel="noreferrer"><Navigation size={18}/>길찾기</a></div></section>
+ <MockNotice/>
+ <div className="detail-grid"><div className="detail-main">
+ <section className="card detail-section"><h2><ShieldCheck size={21}/>공식 등록정보</h2><dl className="info-grid"><div><dt>영업 상태</dt><dd>{statusLabels[facility.businessStatus]}</dd></div><div><dt>전화번호</dt><dd>{facility.phone||"정보 없음"}</dd></div><div><dt>주소</dt><dd>{facility.roadAddress||"미확인"}</dd></div><div><dt>출처</dt><dd>{facility.sourceName}</dd></div><div><dt>원천 데이터 수정일</dt><dd>{facility.sourceDate}</dd></div><div><dt>두들펫 최종 동기화일</dt><dd>{facility.syncedAt||"미확인"}</dd></div></dl><p className="quality-note">공식 등록상 영업은 현재 시간에 진료 중이라는 뜻이 아닙니다. 방문 전 전화로 확인하세요.</p></section>
+ <section className="card detail-section"><h2>두들펫 확인정보</h2><div className="tag-row">{facility.features.verificationStatus==="VALID"&&<>{facility.features.open24h==="YES"&&<span className="pill">24시간</span>}{facility.features.nightService==="YES"&&<span className="pill">야간 진료</span>}{facility.features.exoticService==="YES"&&<span className="pill">특수동물</span>}</>}</div><p className="muted">{facility.features.verificationStatus==="VALID" ? `근거와 유효기간이 있는 확인정보만 표시합니다. 최근 확인일: ${facility.features.verifiedAt}`:"추가 운영정보는 아직 확인되지 않았습니다. 미확인은 ‘아니오’가 아닙니다."}</p></section>
+ {Boolean(facility.verifications?.length)&&<section className="card detail-section"><h2>확인 근거</h2><ul>{facility.verifications!.map(v=><li key={v.fieldName}><strong>{{open_24h:"24시간",night_service:"야간",exotic_service:"특수동물",cat_service:"고양이",parking_available:"주차"}[v.fieldName]??v.fieldName}: {v.fieldValue}</strong><p>{v.evidenceNote} · {v.sourceType}</p><p>확인일 {new Intl.DateTimeFormat("ko-KR",{timeZone:"Asia/Seoul"}).format(new Date(v.verifiedAt))} · 만료일 {new Intl.DateTimeFormat("ko-KR",{timeZone:"Asia/Seoul"}).format(new Date(v.expiresAt))}</p>{v.sourceUrl&&/^https?:\/\//.test(v.sourceUrl)&&<a href={v.sourceUrl} target="_blank" rel="noreferrer">확인 출처 보기</a>}</li>)}</ul></section>}
+ <section className="card detail-section"><h2>지도</h2><KakaoMap facilities={[facility]}/></section>
+ {facility.type==="ANIMAL_HOSPITAL"&&<section className="card detail-section"><h2>{region} X-ray 진료비</h2>{fee?<><strong>{formatWon(fee.medianPrice)}</strong><p>{fee.sourceName} · {fee.surveyYear}년</p></>:<p className="muted">이 지역의 공식 진료비 통계는 아직 등록되지 않았습니다.</p>}<p className="quality-note">지역 통계이며 이 병원의 실제 가격이 아닙니다.</p>{facility.regionSlug&&<Link href={`/cost/${facility.regionSlug}/xray`}>지역 통계 확인</Link>}</section>}
+ <section className="card detail-section"><h2>정보수정 요청</h2><p className="muted">전화번호, 주소, 운영정보가 다르면 알려주세요.</p><Link className="secondary-button" href={`/report?facility=${facility.id}`}>정보수정 요청</Link></section>
+ </div><aside className="detail-aside">{(["ANIMAL_PHARMACY","ANIMAL_HOSPITAL","PET_FUNERAL"] as const).map((kind,i)=><section key={kind}><h2>{["주변 동물약국","가까운 다른 병원","주변 장례시설"][i]}</h2>{around.filter(f=>f.type===kind).slice(0,2).map(f=><FacilityCard key={f.id} facility={f} compact/>)}{!around.some(f=>f.type===kind)&&<p className="muted">{hasCoordinates?"직선거리 10km 내 확인된 시설이 없습니다.":"기준 좌표가 없어 거리를 계산할 수 없습니다."}</p>}</section>)}</aside></div></div>;
 }

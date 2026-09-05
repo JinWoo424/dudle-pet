@@ -1,20 +1,19 @@
-import { guideEntries } from "@/content/guides";
-import { listFacilities } from "@/data/repository";
-
-export const sitemapKinds = ["regions", "hospitals-1", "pharmacies-1", "funerals", "costs", "guides"] as const;
-export type SitemapKind = (typeof sitemapKinds)[number];
-
-export async function urlsForSitemap(kind: SitemapKind) {
-  const facilities = await listFacilities();
-  switch (kind) {
-    case "regions": return ["/", "/hospital", "/hospital/jeonnam/yeosu", "/hospital/jeonnam/yeosu/24h", "/hospital/jeonnam/yeosu/night", "/pharmacy", "/pharmacy/jeonnam/yeosu", "/funeral", "/funeral/jeonnam"];
-    case "hospitals-1": return facilities.filter((item) => item.type === "ANIMAL_HOSPITAL" && item.name && item.roadAddress).map((item) => `/hospital/jeonnam/yeosu/${item.id}`);
-    case "pharmacies-1": return facilities.filter((item) => item.type === "ANIMAL_PHARMACY" && item.name && item.roadAddress).map((item) => `/pharmacy/jeonnam/yeosu/${item.id}`);
-    case "funerals": return facilities.filter((item) => item.type === "PET_FUNERAL" && item.name && item.roadAddress).map((item) => `/funeral/jeonnam/yeosu/${item.id}`);
-    case "costs": return ["/cost", "/cost/jeonnam/yeosu", ...["consultation", "vaccination", "blood-test", "xray", "ultrasound", "ct", "mri"].map((item) => `/cost/jeonnam/yeosu/${item}`)];
-    case "guides": return ["/guide", ...guideEntries.map((item) => `/guide/${item.slug}`), "/about", "/data-policy"];
-  }
+import { getSql } from "@/db/connection";
+import { dataMode } from "@/lib/data-mode";
+export const xmlEscape=(value:string)=>value.replace(/[<>&"']/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&apos;"}[c]!));
+export const siteBase=()=>process.env.NEXT_PUBLIC_SITE_URL||"https://pet.dudle.co.kr";
+export async function sitemapPageCount(){
+ if(dataMode()==="mock")return 0;
+ const [row]=await getSql()`SELECT count(*)::int AS count FROM seo_pages WHERE seo_status='SEO_READY' AND NOT manual_hold`;
+ return Math.ceil(row.count/10000);
 }
-
-export function xmlResponse(body: string) { return new Response(`<?xml version="1.0" encoding="UTF-8"?>${body}`, { headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600, s-maxage=21600" } }); }
-
+export async function urlsForSitemap(page:number){
+ if(dataMode()==="mock")return [];
+ const rows=await getSql()`SELECT canonical_url,last_evaluated_at FROM seo_pages WHERE seo_status='SEO_READY' AND NOT manual_hold ORDER BY canonical_url LIMIT 10000 OFFSET ${(page-1)*10000}`;
+ return rows.flatMap(row=>{
+  try {const url=new URL(row.canonical_url,siteBase());if(url.origin!==new URL(siteBase()).origin||url.search||url.hash)return [];
+   return [{url:url.href,lastmod:new Date(row.last_evaluated_at).toISOString()}];
+  }catch{return [];}
+ });
+}
+export function xmlResponse(body:string){return new Response(`<?xml version="1.0" encoding="UTF-8"?>${body}`,{headers:{"Content-Type":"application/xml; charset=utf-8","Cache-Control":"no-store"}});}

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export function HomeSearch() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export function HomeSearch() {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = query.trim();
-    if (normalized) router.push(`/search?q=${encodeURIComponent(normalized)}`);
+    if (normalized) { track("search");router.push(`/search?q=${encodeURIComponent(normalized)}`); }
   }
 
   return (
