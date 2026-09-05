@@ -18,4 +18,10 @@
 ## Structured data
 
 시설 상세의 화면에 실제 표시한 이름·주소·전화·좌표만 `LocalBusiness`와 `BreadcrumbList`에 포함한다. 검증된 영업시간이 없으면 `openingHoursSpecification`을 만들지 않는다.
+# 현재 적용 상태 (2026-09-05)
+
+실제 공개 색인 승인은 seo_pages의 SEO_READY + manual_hold=false를 기준으로 합니다.
+현재 재계산은 빈/낮은 데이터 페이지를 보수적으로 즉시 noindex 처리합니다.
+기존 문서/순수 함수의 14일 hysteresis는 현재 DB 재계산 job에 연결되지 않았습니다.
+실제 DB에서 재계산·sitemap을 검증한 것은 아닙니다.
 

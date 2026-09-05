@@ -1,5 +1,7 @@
 # 백업 및 복구
 
+아래는 운영 정책 초안입니다. 이 작업에서 백업을 생성하거나 복원을 검증한 것은 아닙니다.
+
 ## 우선순위
 
 1. 자체 검증: `facility_features`, `facility_verifications`, `facility_hours`
@@ -18,4 +20,3 @@
 ## 복구 순서
 
 schema migration → regions/facilities → 자체 검증 → 진료비 → 신고/audit → count/SEO 재계산 → cache revalidate 순으로 수행한다. 공공 source는 마지막 성공 기준 이후를 재수집한다.
-
