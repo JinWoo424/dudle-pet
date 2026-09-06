@@ -1,5 +1,12 @@
 import { randomBytes, scryptSync } from "node:crypto";
 
+if (process.argv.includes("--check")) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(randomBytes(24), salt, 64).toString("hex");
+  process.stdout.write(JSON.stringify({ interactiveInputSupported: Boolean(process.stdin.setRawMode), hashFormatValid: /^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(`scrypt$${salt}$${hash}`) }) + "\n");
+  process.exit(0);
+}
+
 function readHidden(prompt) {
   if (!process.stdin.isTTY || !process.stdout.isTTY || typeof process.stdin.setRawMode !== "function") {
     throw new Error("An interactive terminal is required.");

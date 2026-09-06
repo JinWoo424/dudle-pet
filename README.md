@@ -54,6 +54,9 @@ Kakao SDK는 시설 화면에서만 지연 로드합니다. 실제 키·도메�
 ```powershell
 pnpm admin:hash-password
 pnpm generate:secrets
+pnpm verify:supabase-ca
+pnpm verify:vercel-env
+pnpm preflight:vercel
 ```
 
 ## 검증
@@ -77,4 +80,5 @@ main을 GitHub에 push한 뒤 Vercel에서 repository root를 Next.js로 import�
 Preview는 모든 응답에 noindex/nofollow 정책을 적용하고 robots.txt에서 전체 수집을 차단합니다. canonical과 sitemap URL은 항상 `https://pet.dudle.co.kr` 기준이며 Vercel Preview hostname은 sitemap에 기록하지 않습니다.
 자동 Sync/Cron은 Preview에서 실행되지 않고 Production의 정식 hostname에서만 허용됩니다. Preview DB 변경은 인증된 관리자 수동 작업 외에는 수행하지 않습니다.
 환경변수, DNS, HTTPS, 키 교체, 운영 연락처/개인정보 방침 확인은 SETUP_CHECKLIST.md를 따릅니다.
+Vercel 입력표는 [docs/VERCEL_ENV_CHECKLIST.md](./docs/VERCEL_ENV_CHECKLIST.md), Dashboard 절차는 [docs/VERCEL_DEPLOY.md](./docs/VERCEL_DEPLOY.md), 배포 후 자동 검사는 `VERCEL_PREVIEW_URL=https://... npm run qa:preview`를 사용합니다.
 광고는 ADSENSE_ENABLED=false로 유지하며 root domain ads.txt는 변경하지 않습니다.

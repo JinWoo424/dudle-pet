@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Clock3, Cross, HeartHandshake, MapPin, Pill, ReceiptText, ShieldCheck } from "lucide-react";
 import { HomeSearch } from "@/components/search/home-search";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const categories = [
   { href: "/hospital", label: "동물병원", detail: "지역별 공식 등록 병원", icon: Cross },

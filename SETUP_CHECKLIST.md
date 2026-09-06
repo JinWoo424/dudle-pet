@@ -15,12 +15,15 @@ Vercel Project Settings → Environment Variables에서 아래 값을 **Preview 
 - [ ] NEXT_PUBLIC_SITE_URL=https://pet.dudle.co.kr (canonical 고정)
 - [ ] DATA_MODE=database
 - [ ] DATABASE_URL (Preview에서 읽기 위주로 사용할 pooled connection)
+- [ ] DIRECT_URL (등록만 하고 Preview build/deploy에서 migration 실행 금지)
 - [ ] `SUPABASE_CA_CERT` (encrypted multiline PEM; `SUPABASE_CA_CERT_PATH` 사용 금지)
+- [ ] PUBLIC_DATA_SERVICE_KEY (등록 가능, Preview 자동 Sync 금지)
 - [ ] NEXT_PUBLIC_KAKAO_MAP_JS_KEY
-- [ ] ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_SESSION_SECRET (관리자 수동 QA가 필요할 때만)
+- [ ] ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_SESSION_SECRET
+- [ ] CRON_SECRET (등록 여부와 관계없이 Preview Cron route는 404)
 - [ ] ADSENSE_ENABLED=false
-- [ ] CRON_SECRET과 PUBLIC_DATA_SERVICE_KEY는 Preview에서 자동 Sync가 필요 없으므로 기본적으로 등록하지 않음.
-- [ ] DIRECT_URL, GOOGLE_SITE_VERIFICATION, NAVER_SITE_VERIFICATION, NEXT_PUBLIC_GA_ID, NEXT_PUBLIC_ADSENSE_CLIENT_ID, TEST_DATABASE_URL은 Preview에 등록하지 않음.
+- [ ] NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-7368372468718077 (공개 ID만 보존, 광고 활성화 아님)
+- [ ] GOOGLE_SITE_VERIFICATION, NAVER_SITE_VERIFICATION, NEXT_PUBLIC_GA_ID, TEST_DATABASE_URL은 Preview에 등록하지 않음.
 - [ ] Preview build/deploy에서 migration, 전국 Sync, 진료비 import, merge/rollback 명령을 실행하지 않음.
 - [ ] Preview hostname의 `X-Robots-Tag: noindex, nofollow`, HTML robots meta, `/robots.txt` 전체 차단 확인.
 - [ ] `/sitemap.xml`과 canonical에 Preview hostname이 없고 `https://pet.dudle.co.kr`만 사용되는지 확인.
@@ -44,6 +47,7 @@ Vercel Project Settings → Environment Variables에서 아래 값을 **Preview 
 - [ ] TEST_DATABASE_URL은 폐기 가능한 별도 테스트 환경에만 설정.
 
 관리자 자격 증명은 `pnpm admin:hash-password`, 세션/Cron 비밀은 `pnpm generate:secrets`로 로컬에서 생성한다. 명령 출력은 Vercel encrypted environment variable에 직접 옮기고 저장소 파일에 쓰지 않는다.
+상세 scope·용도·취득 위치는 [docs/VERCEL_ENV_CHECKLIST.md](./docs/VERCEL_ENV_CHECKLIST.md)를 따른다.
 
 ## 실제 acceptance
 

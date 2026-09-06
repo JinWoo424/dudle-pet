@@ -14,8 +14,8 @@ Preview 배포 URL은 공개 검색 색인 대상이 아니며 Production 승격
 ## URL과 데이터
 
 - `/`를 확인한다.
-- 병원: `/hospital/seoul`, `/hospital/busan`, `/hospital/jeonnam/yeosu`를 확인한다.
-- 약국: `/pharmacy/seoul`, `/pharmacy/busan`, `/pharmacy/jeonnam/yeosu`를 확인한다.
+- 병원: `/hospital/seoul`, `/hospital/busan`, `/hospital/jeonnam-gwangju/yeosu`를 확인한다.
+- 약국: `/pharmacy/seoul`, `/pharmacy/busan`, `/pharmacy/jeonnam-gwangju/yeosu`를 확인한다.
 - 장례: `/funeral/gyeonggi`, `/funeral/busan`을 확인한다.
 - 병원 상세 3건과 약국 상세 3건을 실제 목록 링크에서 열고, 병원 상세의 주변 약국 연결을 확인한다.
 - `/cost`, `/admin`, `/robots.txt`, `/sitemap.xml`, `/api/health`를 확인한다.
