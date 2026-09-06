@@ -7,13 +7,23 @@ export const previewPaths = [
 const htmlPaths = new Set(["/", "/hospital", "/hospital/busan", "/hospital/jeonnam-gwangju/yeosu", "/pharmacy/busan", "/pharmacy/jeonnam-gwangju/yeosu", "/funeral/busan", "/cost", "/admin"]);
 const canonicalPaths = new Set([...htmlPaths].filter((path) => path !== "/admin"));
 
+function requestHeaders(options) {
+  const headers = {};
+  if (options.hostHeader) headers.host = options.hostHeader;
+  if (options.protectionBypassSecret) {
+    headers["x-vercel-protection-bypass"] = options.protectionBypassSecret;
+  }
+  return headers;
+}
+
 export async function inspectPreview(baseUrl, options = {}) {
   const base = new URL(baseUrl);
+  const headers = requestHeaders(options);
   const results = [];
   const failures = [];
   for (const path of previewPaths) {
     try {
-      const response = await fetch(new URL(path, base), { redirect: "follow", headers: options.hostHeader ? { host: options.hostHeader } : undefined, signal: AbortSignal.timeout(20000) });
+      const response = await fetch(new URL(path, base), { redirect: "follow", headers, signal: AbortSignal.timeout(20000) });
       const text = await response.text();
       const robotsHeader = response.headers.get("x-robots-tag")?.toLowerCase() ?? "";
       const noindex = robotsHeader.includes("noindex") && robotsHeader.includes("nofollow");
@@ -24,8 +34,9 @@ export async function inspectPreview(baseUrl, options = {}) {
       const canonical = !canonicalPaths.has(path) || Boolean(canonicalMatch?.[1]?.startsWith("https://pet.dudle.co.kr"));
       const adsAbsent = !/pagead2\.googlesyndication\.com|adsbygoogle/i.test(text);
       const mockAbsent = !/개발용 가상 데이터|두들동물병원 [ABC]/i.test(text);
-      const passed = response.ok && noindex && robotsMeta && title && canonical && adsAbsent && mockAbsent;
-      results.push({ path, status: response.status, noindex, robotsMeta, title, canonical, adsAbsent, mockAbsent, passed });
+      const adminProtected = path !== "/admin" || (/관리자 로그인/.test(text) && !/두들펫 운영 현황/.test(text));
+      const passed = response.ok && noindex && robotsMeta && title && canonical && adsAbsent && mockAbsent && adminProtected;
+      results.push({ path, status: response.status, noindex, robotsMeta, title, canonical, adsAbsent, mockAbsent, adminProtected, passed });
       if (!passed) failures.push(path);
       if (path === "/robots.txt" && (!/Disallow:\s*\//i.test(text) || /Sitemap:/i.test(text))) failures.push("robots-policy");
       if (path === "/sitemap.xml" && (!text.includes("https://pet.dudle.co.kr") || text.includes(base.hostname))) failures.push("sitemap-host");
@@ -40,7 +51,7 @@ export async function inspectPreview(baseUrl, options = {}) {
     }
   }
   try {
-    const cron = await fetch(new URL("/api/cron/daily-maintenance", base), { redirect: "manual", headers: options.hostHeader ? { host: options.hostHeader } : undefined, signal: AbortSignal.timeout(20000) });
+    const cron = await fetch(new URL("/api/cron/daily-maintenance", base), { redirect: "manual", headers, signal: AbortSignal.timeout(20000) });
     results.push({ path: "/api/cron/daily-maintenance", status: cron.status, passed: cron.status === 404 });
     if (cron.status !== 404) failures.push("cron-preview-block");
   } catch {
