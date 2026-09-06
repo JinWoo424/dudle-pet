@@ -8,5 +8,6 @@ function officialFile(){return {sourceName:"농림축산식품부 동물병원 �
 describe("fee import preview",()=>{
  beforeEach(()=>{sql.mockReset();sql.mockResolvedValueOnce([]).mockResolvedValueOnce([{exists:false}]);});
  it("accepts the complete official item catalog without inventing dimensions",async()=>{const result=await previewFeeImport(JSON.stringify(officialFile()));expect(result.canImport).toBe(true);expect(result.totalRows).toBe(20);expect(result.missingItems).toEqual([]);expect(result.priceParsingErrors).toBe(0);});
+ it("preserves missing prices as null, never zero",async()=>{const input=officialFile();input.rows[0].minimumPrice="없음";const result=await previewFeeImport(JSON.stringify(input));expect(result.rows[0].minimumPrice).toBeNull();expect(result.priceParsingErrors).toBe(0);});
  it("blocks invalid ranges, duplicates and missing official items",async()=>{const input=officialFile();input.rows=[input.rows[0],{...input.rows[0],minimumPrice:"4,000원",maximumPrice:3000}];const result=await previewFeeImport(JSON.stringify(input));expect(result.canImport).toBe(false);expect(result.duplicateKeys).toBe(1);expect(result.rangeErrors).toBe(1);expect(result.missingItems.length).toBe(19);});
 });

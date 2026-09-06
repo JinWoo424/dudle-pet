@@ -188,6 +188,8 @@ export const feeImportBatches = pgTable("fee_import_batches", {
   fileHash: text("file_hash").notNull(), importedAt: timestamp("imported_at", { withTimezone: true }).defaultNow().notNull(), importedBy: text("imported_by").notNull(), rowCount: integer("row_count").default(0).notNull(),
   successCount: integer("success_count").default(0).notNull(), failedCount: integer("failed_count").default(0).notNull(), status: text("status").notNull(), notes: text("notes"),
   rolledBackAt: timestamp("rolled_back_at", { withTimezone: true }), rolledBackBy: text("rolled_back_by"),
+  startedAt: timestamp("started_at", { withTimezone: true }), finishedAt: timestamp("finished_at", { withTimezone: true }),
+  requestCount: integer("request_count").default(0).notNull(), reviewCount: integer("review_count").default(0).notNull(),
 });
 
 export const medicalFeeStatistics = pgTable("medical_fee_statistics", {

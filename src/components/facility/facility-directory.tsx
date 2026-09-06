@@ -10,6 +10,7 @@ import { parseFacilityRoute } from "@/lib/regions";
 import { facilityPath, typePaths } from "@/lib/facility-display";
 import type { FacilityKind } from "@/domain/facility";
 import { seoApproved, relatedSeoLinks } from "@/data/seo-repository";
+import { previewRobotsPolicy } from "@/lib/deployment";
 
 export const directoryConfig = {
  ANIMAL_HOSPITAL:{ label:"동물병원", minimum:5 },
@@ -40,7 +41,7 @@ export async function directoryMetadata(type:FacilityKind,segments:string[],quer
  const title=data.facility?`${data.facility.name} - ${region} ${label} 위치·전화`:`${region} ${feature}${label} 위치·전화·진료정보 찾기`;
  const ready=data.facility?Boolean(data.facility.name&&data.facility.roadAddress&&data.facility.regionSlug&&data.facility.businessStatus!=="UNKNOWN"):(data.result?.total??0)>=(data.route.feature==="24h"?2:data.route.feature?3:minimum);
  const canonical=data.facility?facilityPath(data.facility)!:`/${typePaths[type]}${segments.length?"/"+segments.join("/"):""}`;
- return {title,description:`${region} ${label}의 공식 등록상태와 출처, 위치, 전화번호를 확인하세요.`,alternates:{canonical},robots:{index:!isMockMode()&&ready&&!Object.keys(query).length&&await seoApproved(canonical),follow:true}};
+ return {title,description:`${region} ${label}의 공식 등록상태와 출처, 위치, 전화번호를 확인하세요.`,alternates:{canonical},robots:previewRobotsPolicy()??{index:!isMockMode()&&ready&&!Object.keys(query).length&&await seoApproved(canonical),follow:true}};
 }
 export async function FacilityDirectory({type,segments,query={}}:{type:FacilityKind;segments:string[];query?:Record<string,string|string[]|undefined>}){
  const {route,region,facility,result}=await loadDirectory(type,segments,query);

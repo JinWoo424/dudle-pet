@@ -34,8 +34,10 @@ export interface FeeImportPreview {
 }
 
 function money(value:unknown):number|null|undefined{
- if(value==null||value==="")return null;
+ if(value==null||(typeof value==="string"&&["","-","없음"].includes(value.trim())))return null;
+ if(typeof value!=="string"&&typeof value!=="number")return undefined;
  const normalized=typeof value==="string"?value.replace(/[\s,원]/g,""):value;
+ if(typeof normalized==="string"&&!/^\d+$/.test(normalized))return undefined;
  const parsed=typeof normalized==="number"?normalized:Number(normalized);
  return Number.isSafeInteger(parsed)&&parsed>=0?parsed:undefined;
 }
@@ -91,7 +93,7 @@ export async function previewFeeImport(text:string):Promise<FeeImportPreview>{
  return {fileHash,surveyYear:parsed.surveyYear,sourceName:parsed.sourceName,sourceUrl:parsed.sourceUrl,sourceDate:parsed.sourceDate,totalRows:parsed.rows.length,validRows,regionMatched,historicalRegionMatched,historicalOnly,priceParsingErrors,rangeErrors,medianErrors,averageErrors,duplicateKeys,missingItems,unknownItems,invalidDimensions,regionErrors,alreadyImported,canImport:validRows===parsed.rows.length&&!missingItems.length&&!alreadyImported,errors:errors.slice(0,200),rows};
 }
 
-export async function importFeeFile(text:string,fileName:string,importedBy:string){
+export async function importFeeFile(text:string,fileName:string,importedBy:string,audit?:{requestCount:number;reviewCount:number;startedAt:string;notes:string}){
  const preview=await previewFeeImport(text);if(!preview.canImport)throw new Error("FEE_IMPORT_PREVIEW_FAILED");
  const sql=getSql();return sql.begin(async tx=>{
   await tx`SELECT pg_advisory_xact_lock(774203003)`;
@@ -99,11 +101,11 @@ export async function importFeeFile(text:string,fileName:string,importedBy:strin
   if(duplicate.exists)throw new Error("ALREADY_IMPORTED");
   const [batch]=await tx`INSERT INTO fee_import_batches(survey_year,source_name,source_url,file_name,file_hash,imported_by,row_count,status)
    VALUES(${preview.surveyYear},${preview.sourceName},${preview.sourceUrl},${basename(fileName)},${preview.fileHash},${importedBy},${preview.totalRows},'RUNNING') RETURNING id`;
-  for(const row of preview.rows){
-   await tx`INSERT INTO medical_fee_statistics(survey_year,region_level,region_id,current_region_id,survey_region_code,survey_province_name,survey_city_name,region_match_status,province,city,category_code,item_code,item_name,animal_type,weight_class,unit,minimum_price,median_price,average_price,maximum_price,sample_count,source_name,source_url,source_date,import_batch_id)
-    VALUES(${preview.surveyYear},${row.regionLevel},${row.currentRegionId},${row.currentRegionId},${row.surveyRegionCode??null},${row.surveyProvinceName??null},${row.surveyCityName??null},${row.regionMatchStatus},${row.surveyProvinceName??null},${row.surveyCityName??null},${row.categoryCode},${row.itemCode},${row.itemName},${row.animalType},${row.weightClass},'원',${row.minimumPrice},${row.medianPrice},${row.averagePrice},${row.maximumPrice},${row.sampleCount},${preview.sourceName},${preview.sourceUrl},${preview.sourceDate},${batch.id})`;
-  }
+  const records=preview.rows.map(row=>({survey_year:preview.surveyYear,region_level:row.regionLevel,region_id:row.currentRegionId,current_region_id:row.currentRegionId,survey_region_code:row.surveyRegionCode??null,survey_province_name:row.surveyProvinceName??null,survey_city_name:row.surveyCityName??null,region_match_status:row.regionMatchStatus,province:row.surveyProvinceName??null,city:row.surveyCityName??null,category_code:row.categoryCode,item_code:row.itemCode,item_name:row.itemName,animal_type:row.animalType,weight_class:row.weightClass,unit:'원',minimum_price:row.minimumPrice,median_price:row.medianPrice,average_price:row.averagePrice,maximum_price:row.maximumPrice,sample_count:row.sampleCount,source_name:preview.sourceName,source_url:preview.sourceUrl,source_date:preview.sourceDate,import_batch_id:batch.id}));
+  const columns=['survey_year','region_level','region_id','current_region_id','survey_region_code','survey_province_name','survey_city_name','region_match_status','province','city','category_code','item_code','item_name','animal_type','weight_class','unit','minimum_price','median_price','average_price','maximum_price','sample_count','source_name','source_url','source_date','import_batch_id'] as const;
+  for(let offset=0;offset<records.length;offset+=250)await tx`INSERT INTO medical_fee_statistics ${tx(records.slice(offset,offset+250),...columns)}`;
   await tx`UPDATE fee_import_batches SET status='SUCCESS',success_count=${preview.totalRows},failed_count=0 WHERE id=${batch.id}`;
+  if(audit)await tx`UPDATE fee_import_batches SET started_at=${audit.startedAt}::timestamptz,finished_at=now(),request_count=${audit.requestCount},review_count=${audit.reviewCount},notes=${audit.notes} WHERE id=${batch.id}`;
   await tx`INSERT INTO admin_audit_logs(admin,action,entity_type,entity_id,after_json) VALUES(${importedBy},'FEE_IMPORT','fee_import_batches',${batch.id},${tx.json({fileHash:preview.fileHash,rows:preview.totalRows,surveyYear:preview.surveyYear})})`;
   return {batchId:String(batch.id),imported:preview.totalRows};
  });

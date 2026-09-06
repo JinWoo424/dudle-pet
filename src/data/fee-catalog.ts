@@ -39,6 +39,12 @@ export const officialFeeItems:readonly OfficialFeeItem[]=[
 
 export const officialFeeItemByCode=new Map(officialFeeItems.map(item=>[item.itemCode,item]));
 export const feeCategoryLabels:Record<string,string>={CONSULTATION:"진찰",HOSPITALIZATION:"입원",VACCINATION:"예방접종",BLOOD_TEST:"혈액검사",IMAGING:"영상검사",MEDICATION:"투약/조제"};
+const costCitySlugs:Record<string,string>={
+ 'gyeonggi/r-41110':'gyeonggi/suwon','gangwon/r-51110':'gangwon/chuncheon','chungbuk/r-43110':'chungbuk/cheongju',
+ 'chungnam/r-44130':'chungnam/cheonan','jeonbuk/r-52110':'jeonbuk/jeonju','gyeongbuk/r-47110':'gyeongbuk/pohang','gyeongnam/r-48120':'gyeongnam/changwon',
+};
+export const costRegionSlug=(fullSlug:string)=>costCitySlugs[fullSlug]??fullSlug;
+export const currentRegionSlugFromCost=(slug:string)=>Object.entries(costCitySlugs).find(([,cost])=>cost===slug)?.[0]??slug;
 
 export function isOfficialFeeDimension(item:OfficialFeeItem,animalType:FeeAnimalType,weightClass:FeeWeightClass){
  return item.dimensions.some(d=>d.animalType===animalType&&d.weightClass===weightClass);
