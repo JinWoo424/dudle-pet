@@ -33,4 +33,5 @@ Thumbs.db
 .local-secrets/
 
 # generated data
+data/cache/
 docs/api-samples/*.live.json

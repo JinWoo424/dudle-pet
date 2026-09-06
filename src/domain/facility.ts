@@ -51,6 +51,7 @@ export interface FeeStatisticView {
   sourceName: string;
   sourceUrl?: string;
   sourceDate?: string;
+  collectedAt?: string;
   regionSlug?: string;
   surveyRegionCode?: string;
   surveyProvinceName?: string;

@@ -62,6 +62,7 @@ export async function refreshSeo(){
    ${base}||'/'||CASE facility_type WHEN 'ANIMAL_HOSPITAL' THEN 'hospital' WHEN 'ANIMAL_PHARMACY' THEN 'pharmacy' ELSE 'funeral' END
    FROM facilities WHERE is_active AND business_status='OPEN' AND facility_type IN ('ANIMAL_HOSPITAL','ANIMAL_PHARMACY','PET_FUNERAL') GROUP BY facility_type
    ON CONFLICT(canonical_url) DO UPDATE SET result_count=EXCLUDED.result_count,page_quality_score=EXCLUDED.page_quality_score,seo_status=CASE WHEN seo_pages.manual_hold THEN 'NOINDEX_MANUAL'::seo_status ELSE EXCLUDED.seo_status END,monetization_status='OFF',last_evaluated_at=now()`;
+  await tx`UPDATE seo_pages SET seo_status='NOINDEX_LOW_DATA',last_evaluated_at=now() WHERE page_type IN ('COST_REGION','COST_ITEM')`;
   await tx`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1),valid AS (
     SELECT m.* FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id
     AND nullif(m.source_name,'') IS NOT NULL AND m.source_url LIKE 'https://%' AND m.source_date IS NOT NULL
@@ -73,7 +74,7 @@ export async function refreshSeo(){
    )
    INSERT INTO seo_pages(page_type,region_id,result_count,page_quality_score,seo_status,monetization_status,canonical_url)
    SELECT CASE WHEN p.item_code IS NULL THEN 'COST_REGION' ELSE 'COST_ITEM' END,p.region_id,p.total,CASE WHEN p.total>0 THEN 70 ELSE 0 END,CASE WHEN p.total>0 THEN 'SEO_READY'::seo_status ELSE 'NOINDEX_LOW_DATA'::seo_status END,'OFF',
-   ${base}||'/cost'||CASE WHEN r.full_slug IS NOT NULL THEN '/'||r.full_slug ELSE '' END||CASE WHEN p.item_code IS NOT NULL THEN '/'||p.item_code ELSE '' END
+   ${base}||'/cost'||CASE WHEN r.full_slug IS NOT NULL THEN '/'||CASE r.official_code WHEN '4111000000' THEN 'gyeonggi/suwon' WHEN '5111000000' THEN 'gangwon/chuncheon' WHEN '4311000000' THEN 'chungbuk/cheongju' WHEN '4413000000' THEN 'chungnam/cheonan' WHEN '5211000000' THEN 'jeonbuk/jeonju' WHEN '4711000000' THEN 'gyeongbuk/pohang' WHEN '4812000000' THEN 'gyeongnam/changwon' ELSE r.full_slug END ELSE '' END||CASE WHEN p.item_code IS NOT NULL THEN '/'||p.item_code ELSE '' END
    FROM pages p LEFT JOIN regions r ON r.id=p.region_id
    ON CONFLICT(canonical_url) DO UPDATE SET result_count=EXCLUDED.result_count,page_quality_score=EXCLUDED.page_quality_score,seo_status=CASE WHEN seo_pages.manual_hold THEN 'NOINDEX_MANUAL'::seo_status ELSE EXCLUDED.seo_status END,monetization_status='OFF',last_evaluated_at=now()`;
   return {regionalPages:evaluated.length};
