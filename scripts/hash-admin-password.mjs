@@ -1,4 +1,5 @@
 import { randomBytes, scryptSync } from "node:crypto";
+import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 
 if (process.argv.includes("--check")) {
   const salt = randomBytes(16).toString("hex");
@@ -50,7 +51,19 @@ try {
   if (password !== confirmation) throw new Error("Passwords do not match.");
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
-  process.stdout.write(`ADMIN_PASSWORD_HASH=scrypt$${salt}$${hash}\n`);
+  const encoded = `scrypt$${salt}$${hash}`;
+  if (process.argv.includes("--save-preview-env")) {
+    const target = ".local-secrets/vercel-preview.env";
+    if (!existsSync(target)) throw new Error("Prepare the preview environment file first.");
+    const content = readFileSync(target, "utf8");
+    if (!/^ADMIN_PASSWORD_HASH=.*$/m.test(content)) throw new Error("ADMIN_PASSWORD_HASH entry is missing.");
+    const updated = content.replace(/^ADMIN_PASSWORD_HASH=.*$/m, () => `ADMIN_PASSWORD_HASH="${encoded}"`);
+    writeFileSync(`${target}.tmp`, updated, { encoding: "utf8", mode: 0o600 });
+    renameSync(`${target}.tmp`, target);
+    process.stdout.write("ADMIN_PASSWORD_HASH: SAVED\n");
+  } else {
+    process.stdout.write(`ADMIN_PASSWORD_HASH=${encoded}\n`);
+  }
 } catch (error) {
   process.stderr.write(`${error instanceof Error ? error.message : "Password hashing failed."}\n`);
   process.exitCode = 1;

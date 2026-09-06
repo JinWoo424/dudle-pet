@@ -1,9 +1,21 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { parseEnv } from "node:util";
 
-if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+const fileArgument = process.argv.find((argument) => argument.startsWith("--file="));
+const requestedFile = fileArgument?.slice("--file=".length);
+const selectedFile = requestedFile || (existsSync(".local-secrets/vercel-preview.env") ? ".local-secrets/vercel-preview.env" : undefined);
+let environment;
+if (selectedFile) {
+  if (!existsSync(selectedFile)) { console.error("ENV_FILE: MISSING"); process.exit(1); }
+  try { environment = parseEnv(readFileSync(selectedFile, "utf8")); }
+  catch { console.error("ENV_FILE: INVALID"); process.exit(1); }
+} else {
+  if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+  environment = process.env;
+}
 
 const scopeArgument = process.argv.find((argument) => argument.startsWith("--scope="));
-const scope = scopeArgument?.split("=")[1] ?? (process.env.VERCEL_ENV === "production" ? "production" : "preview");
+const scope = scopeArgument?.split("=")[1] ?? (environment.VERCEL_ENV === "production" ? "production" : "preview");
 if (!new Set(["preview", "production"]).has(scope)) {
   console.error("SCOPE: INVALID");
   process.exit(1);
@@ -18,10 +30,10 @@ const optional = ["NEXT_PUBLIC_GA_ID", "GOOGLE_SITE_VERIFICATION", "NAVER_SITE_V
 let failed = false;
 
 for (const name of [...required, ...optional]) {
-  let status = process.env[name] ? "SET" : "MISSING";
-  if (name === "NEXT_PUBLIC_SITE_URL" && process.env[name] !== "https://pet.dudle.co.kr") status = process.env[name] ? "INVALID" : "MISSING";
-  if (name === "DATA_MODE" && process.env[name] !== "database") status = process.env[name] ? "INVALID" : "MISSING";
-  if (name === "ADSENSE_ENABLED" && process.env[name] !== "false") status = process.env[name] ? "INVALID" : "MISSING";
+  let status = environment[name] ? "SET" : "MISSING";
+  if (name === "NEXT_PUBLIC_SITE_URL" && environment[name] !== "https://pet.dudle.co.kr") status = environment[name] ? "INVALID" : "MISSING";
+  if (name === "DATA_MODE" && environment[name] !== "database") status = environment[name] ? "INVALID" : "MISSING";
+  if (name === "ADSENSE_ENABLED" && environment[name] !== "false") status = environment[name] ? "INVALID" : "MISSING";
   console.log(`${name}: ${status}`);
   if (required.includes(name) && status !== "SET") failed = true;
 }

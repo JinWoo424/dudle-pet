@@ -40,6 +40,7 @@
     "scan:secrets": "node scripts/scan-secrets.mjs",
     "admin:hash-password": "node scripts/hash-admin-password.mjs",
     "generate:secrets": "node scripts/generate-secrets.mjs",
+    "prepare:vercel-preview-env": "node scripts/prepare-vercel-preview-env.mjs",
     "verify:supabase-ca": "node scripts/verify-supabase-ca.mjs",
     "verify:vercel-env": "node scripts/verify-vercel-env.mjs",
     "verify:preview-safety": "node scripts/verify-preview-safety.mjs",

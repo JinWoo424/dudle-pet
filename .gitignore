@@ -30,6 +30,7 @@ Thumbs.db
 *.log
 *.tsbuildinfo
 .vercel/
+.local-secrets/
 
 # generated data
 docs/api-samples/*.live.json
