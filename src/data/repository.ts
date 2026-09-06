@@ -76,30 +76,35 @@ export async function queryFacilities(query: FacilityQuery = {}) {
 export async function listFacilities(type?: FacilityKind) { return (await queryFacilities({ type })).facilities; }
 export const getFacility=cache(async(id:string)=>(await queryFacilities({id})).facilities[0]??null);
 export async function searchFacilities(query: string) { return (await queryFacilities({ search: query })).facilities; }
-export async function listFeeStatistics(itemCode?: string, regionSlug?: string,filters:{animalType?:string;weightClass?:string}={}): Promise<FeeStatisticView[]> {
+export async function listFeeStatistics(itemCode?: string, regionSlug?: string,filters:{animalType?:string;weightClass?:string;surveyYear?:number}={}): Promise<FeeStatisticView[]> {
  if (isMockMode()) return mockFeeStatistics.filter(f => (!itemCode || f.itemCode===itemCode) && (!regionSlug || regionSlug==="jeonnam/yeosu" || regionSlug==="jeonnam")&&(!filters.animalType||f.animalType===filters.animalType)&&(!filters.weightClass||f.weightClass===filters.weightClass)).map(f=>({...f,regionSlug:f.regionLevel==="CITY"?"jeonnam/yeosu":f.regionLevel==="PROVINCE"?"jeonnam":undefined}));
  const sql = getSql();let rows:Row[];
  if(!regionSlug&&!itemCode){
-  rows=await sql`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1)
-   SELECT DISTINCT ON(m.item_code,m.animal_type,m.weight_class) m.*,r.full_slug FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id LEFT JOIN regions r ON r.id=m.current_region_id
-   WHERE (${filters.animalType??null}::text IS NULL OR m.animal_type::text=${filters.animalType??null}) AND (${filters.weightClass??null}::text IS NULL OR m.weight_class::text=${filters.weightClass??null})
+  rows=await sql`WITH active_batch AS (SELECT id,imported_at FROM fee_import_batches WHERE status='SUCCESS' AND (${filters.surveyYear??null}::int IS NULL OR survey_year=${filters.surveyYear??null}) ORDER BY survey_year DESC,imported_at DESC LIMIT 1)
+   SELECT DISTINCT ON(m.item_code,m.animal_type,m.weight_class) m.*,r.full_slug,b.imported_at AS collected_at FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id LEFT JOIN regions r ON r.id=m.current_region_id
+   WHERE m.region_level='NATIONAL' AND (${filters.animalType??null}::text IS NULL OR m.animal_type::text=${filters.animalType??null}) AND (${filters.weightClass??null}::text IS NULL OR m.weight_class::text=${filters.weightClass??null})
    ORDER BY m.item_code,m.animal_type,m.weight_class,CASE m.region_level WHEN 'NATIONAL' THEN 0 WHEN 'PROVINCE' THEN 1 ELSE 2 END`;
  }else{
-  rows=await sql`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1),target AS (SELECT id FROM regions WHERE full_slug=${regionSlug??""} AND is_active),survey_context AS (
+  rows=await sql`WITH active_batch AS (SELECT id,imported_at FROM fee_import_batches WHERE status='SUCCESS' AND (${filters.surveyYear??null}::int IS NULL OR survey_year=${filters.surveyYear??null}) ORDER BY survey_year DESC,imported_at DESC LIMIT 1),target AS (SELECT id FROM regions WHERE full_slug=${regionSlug??""} AND is_active),survey_context AS (
     SELECT DISTINCT m.survey_province_name FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id JOIN target t ON t.id=m.current_region_id WHERE m.region_level='CITY'
-   ) SELECT m.*,r.full_slug FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id LEFT JOIN regions r ON r.id=m.current_region_id
+   ) SELECT m.*,r.full_slug,b.imported_at AS collected_at FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id LEFT JOIN regions r ON r.id=m.current_region_id
    WHERE (${itemCode??null}::text IS NULL OR m.item_code=${itemCode??null})
    AND (${filters.animalType??null}::text IS NULL OR m.animal_type::text=${filters.animalType??null}) AND (${filters.weightClass??null}::text IS NULL OR m.weight_class::text=${filters.weightClass??null})
-   AND (m.current_region_id=(SELECT id FROM target) OR (${Boolean(itemCode)} AND (m.region_level='NATIONAL' OR (m.region_level='PROVINCE' AND m.survey_province_name IN(SELECT survey_province_name FROM survey_context)))))
+   AND (m.current_region_id=(SELECT id FROM target) OR (${!regionSlug} AND m.region_level='NATIONAL') OR (${Boolean(itemCode&&regionSlug)} AND EXISTS(SELECT 1 FROM medical_fee_statistics own JOIN active_batch ob ON ob.id=own.import_batch_id WHERE own.current_region_id=(SELECT id FROM target) AND own.item_code=${itemCode??null}) AND (m.region_level='NATIONAL' OR (m.region_level='PROVINCE' AND m.survey_province_name IN(SELECT survey_province_name FROM survey_context)))))
    ORDER BY m.item_code,CASE m.region_level WHEN 'CITY' THEN 0 WHEN 'PROVINCE' THEN 1 ELSE 2 END,m.animal_type,m.weight_class`;
  }
- return rows.map(r => ({ categoryCode:String(r.category_code),itemCode:String(r.item_code),itemName:String(r.item_name),region:r.region_level==="NATIONAL"?"전국":String(r.survey_city_name||r.survey_province_name||"조사 지역"),regionLevel:r.region_level as FeeStatisticView["regionLevel"],surveyYear:Number(r.survey_year),minimumPrice:r.minimum_price==null?null:Number(r.minimum_price),medianPrice:r.median_price==null?null:Number(r.median_price),averagePrice:r.average_price==null?null:Number(r.average_price),maximumPrice:r.maximum_price==null?null:Number(r.maximum_price),sampleCount:r.sample_count==null?null:Number(r.sample_count),sourceName:String(r.source_name),sourceUrl:r.source_url?String(r.source_url):undefined,sourceDate:r.source_date?String(r.source_date):undefined,regionSlug:r.full_slug?String(r.full_slug):undefined,surveyRegionCode:r.survey_region_code?String(r.survey_region_code):undefined,surveyProvinceName:r.survey_province_name?String(r.survey_province_name):undefined,surveyCityName:r.survey_city_name?String(r.survey_city_name):undefined,regionMatchStatus:r.region_match_status as FeeStatisticView["regionMatchStatus"],animalType:String(r.animal_type),weightClass:String(r.weight_class) }));
+ return rows.map(r => ({ categoryCode:String(r.category_code),itemCode:String(r.item_code),itemName:String(r.item_name),region:r.region_level==="NATIONAL"?"전국":String(r.survey_city_name||r.survey_province_name||"조사 지역"),regionLevel:r.region_level as FeeStatisticView["regionLevel"],surveyYear:Number(r.survey_year),minimumPrice:r.minimum_price==null?null:Number(r.minimum_price),medianPrice:r.median_price==null?null:Number(r.median_price),averagePrice:r.average_price==null?null:Number(r.average_price),maximumPrice:r.maximum_price==null?null:Number(r.maximum_price),sampleCount:r.sample_count==null?null:Number(r.sample_count),sourceName:String(r.source_name),sourceUrl:r.source_url?String(r.source_url):undefined,sourceDate:r.source_date?new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Seoul"}).format(new Date(String(r.source_date))):undefined,collectedAt:r.collected_at?String(r.collected_at):undefined,regionSlug:r.full_slug?String(r.full_slug):undefined,surveyRegionCode:r.survey_region_code?String(r.survey_region_code):undefined,surveyProvinceName:r.survey_province_name?String(r.survey_province_name):undefined,surveyCityName:r.survey_city_name?String(r.survey_city_name):undefined,regionMatchStatus:r.region_match_status as FeeStatisticView["regionMatchStatus"],animalType:String(r.animal_type),weightClass:String(r.weight_class) }));
 }
-export async function listFeeRegionLinks(regionSlug:string){
+export async function listFeeYears(){
  if(isMockMode())return [];
- const rows=await getSql()`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1),target AS (SELECT full_slug FROM regions WHERE full_slug=${regionSlug} AND is_active)
+ const rows=await getSql()`SELECT DISTINCT survey_year FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC`;
+ return rows.map(row=>Number(row.survey_year));
+}
+export async function listFeeRegionLinks(regionSlug:string,surveyYear?:number){
+ if(isMockMode())return [];
+ const rows=await getSql()`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' AND (${surveyYear??null}::int IS NULL OR survey_year=${surveyYear??null}) ORDER BY survey_year DESC,imported_at DESC LIMIT 1)
   SELECT r.full_slug,r.name,count(*)::int AS count,max(m.survey_year)::int AS survey_year,min(m.survey_province_name) AS survey_province_name
-  FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id JOIN regions r ON r.id=m.current_region_id JOIN target t ON r.full_slug=t.full_slug OR starts_with(r.full_slug,t.full_slug||'/')
+  FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id JOIN regions r ON r.id=m.current_region_id WHERE r.is_active AND (${regionSlug}='' OR r.full_slug=${regionSlug} OR starts_with(r.full_slug,${regionSlug}||'/'))
   GROUP BY r.id ORDER BY r.full_slug`;
  return rows.map(row=>({slug:String(row.full_slug),name:String(row.name),count:Number(row.count),surveyYear:Number(row.survey_year),surveyProvinceName:String(row.survey_province_name??"")}));
 }
