@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deploymentTarget, isCanonicalProductionHost, isPreviewDeployment, productionHostname, shouldNoIndexHost } from "../deployment";
+import { deploymentTarget, isCanonicalProductionHost, isPreviewDeployment, previewRobotsPolicy, productionHostname, shouldNoIndexHost } from "../deployment";
 
 const production = { NEXT_PUBLIC_SITE_URL: "https://pet.dudle.co.kr", VERCEL: "1", VERCEL_ENV: "production" };
 
@@ -14,4 +14,6 @@ describe("deployment indexing policy", () => {
   it("classifies Vercel production", () => expect(deploymentTarget({ VERCEL_ENV: "production" })).toBe("production"));
   it("classifies an unset Vercel environment as local", () => expect(deploymentTarget({})).toBe("local"));
   it("keeps the configured production canonical host", () => expect(productionHostname({ NEXT_PUBLIC_SITE_URL: "https://pet.dudle.co.kr" })).toBe("pet.dudle.co.kr"));
+  it("forces noindex and nofollow metadata in preview", () => expect(previewRobotsPolicy({ VERCEL_ENV: "preview" })).toEqual({ index: false, follow: false }));
+  it("does not override production page-level robots metadata", () => expect(previewRobotsPolicy({ VERCEL_ENV: "production" })).toBeUndefined());
 });

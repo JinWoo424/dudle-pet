@@ -7,6 +7,7 @@ import { feeCategoryLabels, officialFeeItemByCode, officialFeeItems } from "@/da
 import { isMockMode, listFeeRegionLinks, listFeeStatistics, resolveRegion } from "@/data/repository";
 import { formatWon } from "@/lib/format";
 import { seoApproved } from "@/data/seo-repository";
+import { previewRobotsPolicy } from "@/lib/deployment";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
@@ -23,7 +24,7 @@ async function load(params:Props["params"],searchParams?:Props["searchParams"]){
 export async function generateMetadata({params}:Props):Promise<Metadata>{
  const {region,item,rows}=await load(params);const label=region?.shortName??region?.name??"지역별";const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";
  const canonical="/cost"+((await params).segments?.length?"/"+(await params).segments!.join("/"):"");
- return {title:item?`${label} 동물병원 ${itemName} 비용·진료비 통계 | 두들펫`:`${label} 동물병원 진료비·가격 통계 | 두들펫`,description:`${label} 동물병원 진료비의 2025년 공식 지역 통계를 확인하세요. 실제 개별 동물병원의 진료비와 다를 수 있습니다.`,alternates:{canonical},robots:{index:!isMockMode()&&rows.length>0&&await seoApproved(canonical),follow:true}};
+ return {title:item?`${label} 동물병원 ${itemName} 비용·진료비 통계 | 두들펫`:`${label} 동물병원 진료비·가격 통계 | 두들펫`,description:`${label} 동물병원 진료비의 2025년 공식 지역 통계를 확인하세요. 실제 개별 동물병원의 진료비와 다를 수 있습니다.`,alternates:{canonical},robots:previewRobotsPolicy()??{index:!isMockMode()&&rows.length>0&&await seoApproved(canonical),follow:true}};
 }
 export const revalidate=21600;
 export const runtime="nodejs";

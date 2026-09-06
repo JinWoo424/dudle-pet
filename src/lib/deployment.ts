@@ -32,6 +32,10 @@ export function isPreviewDeployment(env: DeploymentEnv = currentDeploymentEnv())
   return deploymentTarget(env) === "preview";
 }
 
+export function previewRobotsPolicy(env: DeploymentEnv = currentDeploymentEnv()) {
+  return isPreviewDeployment(env) ? { index: false as const, follow: false as const } : undefined;
+}
+
 export function isCanonicalProductionHost(hostname: string, env: DeploymentEnv = currentDeploymentEnv()) {
   return hostname.toLowerCase().replace(/\.$/, "") === productionHostname(env);
 }

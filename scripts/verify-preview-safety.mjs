@@ -25,7 +25,7 @@ try {
     await new Promise((resolveWait) => setTimeout(resolveWait, 250));
   }
   if (!ready) throw new Error("Preview server did not become ready.");
-  const report = await inspectPreview(base);
+  const report = await inspectPreview(base, { hostHeader: "dudle-pet-git-preview-jinwoo424.vercel.app" });
   console.log(JSON.stringify({ checks: report.results, failures: report.failures, kakaoBrowserCheckRequired: report.kakaoBrowserCheckRequired }, null, 2));
   if (report.failures.length) process.exitCode = 1;
 } catch {
