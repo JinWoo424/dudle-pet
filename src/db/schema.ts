@@ -56,12 +56,26 @@ export const regions = pgTable("regions", {
   cityCode: text("city_code"),
   centerLatitude: real("center_latitude"),
   centerLongitude: real("center_longitude"),
+  officialCode: text("official_code"),
+  officialFullName: text("official_full_name"),
+  isActive: boolean("is_active").default(true).notNull(),
+  abolishedAt: date("abolished_at"),
+  sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }),
   hospitalCount: integer("hospital_count").default(0).notNull(),
   pharmacyCount: integer("pharmacy_count").default(0).notNull(),
   funeralCount: integer("funeral_count").default(0).notNull(),
   activeFacilityCount: integer("active_facility_count").default(0).notNull(),
   ...auditColumns,
 }, (table) => [uniqueIndex("regions_full_slug_uq").on(table.fullSlug), index("regions_parent_idx").on(table.parentId)]);
+
+export const regionAliases = pgTable("region_aliases", {
+  id: serial("id").primaryKey(),
+  regionId: integer("region_id").references(() => regions.id).notNull(),
+  aliasName: text("alias_name").notNull(),
+  aliasSlug: text("alias_slug").notNull(),
+  redirectStatus: integer("redirect_status").default(308).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [uniqueIndex("region_aliases_slug_uq").on(table.aliasSlug), index("region_aliases_region_idx").on(table.regionId)]);
 
 export const facilities = pgTable("facilities", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -173,15 +187,17 @@ export const feeImportBatches = pgTable("fee_import_batches", {
   id: uuid("id").defaultRandom().primaryKey(), surveyYear: integer("survey_year").notNull(), sourceName: text("source_name").notNull(), sourceUrl: text("source_url"), fileName: text("file_name").notNull(),
   fileHash: text("file_hash").notNull(), importedAt: timestamp("imported_at", { withTimezone: true }).defaultNow().notNull(), importedBy: text("imported_by").notNull(), rowCount: integer("row_count").default(0).notNull(),
   successCount: integer("success_count").default(0).notNull(), failedCount: integer("failed_count").default(0).notNull(), status: text("status").notNull(), notes: text("notes"),
+  rolledBackAt: timestamp("rolled_back_at", { withTimezone: true }), rolledBackBy: text("rolled_back_by"),
 });
 
 export const medicalFeeStatistics = pgTable("medical_fee_statistics", {
   id: uuid("id").defaultRandom().primaryKey(), surveyYear: integer("survey_year").notNull(), regionLevel: feeRegionLevel("region_level").notNull(), regionId: integer("region_id").references(() => regions.id),
+  currentRegionId: integer("current_region_id").references(() => regions.id), surveyRegionCode: text("survey_region_code"), surveyProvinceName: text("survey_province_name"), surveyCityName: text("survey_city_name"), regionMatchStatus: text("region_match_status").default("HISTORICAL_ONLY").notNull(),
   province: text("province"), city: text("city"), categoryCode: text("category_code").notNull(), itemCode: text("item_code").notNull(), itemName: text("item_name").notNull(),
   animalType: animalType("animal_type").default("NOT_APPLICABLE").notNull(), weightClass: weightClass("weight_class").default("NOT_APPLICABLE").notNull(), unit: text("unit").default("원").notNull(),
   minimumPrice: integer("minimum_price"), medianPrice: integer("median_price"), averagePrice: integer("average_price"), maximumPrice: integer("maximum_price"), sampleCount: integer("sample_count"),
   sourceName: text("source_name").notNull(), sourceUrl: text("source_url"), sourceDate: date("source_date"), importBatchId: uuid("import_batch_id").references(() => feeImportBatches.id), ...auditColumns,
-}, (table) => [uniqueIndex("fee_stats_dimension_uq").on(table.surveyYear, table.regionLevel, table.regionId, table.itemCode, table.animalType, table.weightClass)]);
+}, (table) => [index("medical_fee_current_region_idx").on(table.currentRegionId,table.itemCode,table.surveyYear)]);
 
 export const userReports = pgTable("user_reports", {
   id: uuid("id").defaultRandom().primaryKey(), facilityId: uuid("facility_id").references(() => facilities.id).notNull(), reportType: reportType("report_type").notNull(), message: text("message").notNull(),
@@ -223,10 +239,24 @@ export const syncSourceSnapshots = pgTable("sync_source_snapshots",{
   syncRunId:uuid("sync_run_id").references(()=>syncRuns.id).notNull(),recordCount:integer("record_count").notNull(),
   complete:boolean("complete").default(false).notNull(),contractChecksum:text("contract_checksum").notNull(),
   approvedAt:timestamp("approved_at",{withTimezone:true}),approvedBy:text("approved_by"),
+  baselineMetrics:jsonb("baseline_metrics"),
   createdAt:timestamp("created_at",{withTimezone:true}).defaultNow().notNull(),
 });
+export const facilityDuplicateReviews = pgTable("facility_duplicate_reviews",{
+ id:uuid("id").defaultRandom().primaryKey(),rawRecordId:uuid("raw_record_id").references(()=>sourceRawRecords.id).notNull().unique(),
+ sourceType:text("source_type").notNull(),publicSourceId:text("public_source_id").notNull(),candidatePublicSourceId:text("candidate_public_source_id"),
+ decision:text("decision").notNull(),reasonCode:text("reason_code").notNull(),reviewDetails:jsonb("review_details").default({}).notNull(),
+ reviewedBy:text("reviewed_by").notNull(),reviewedAt:timestamp("reviewed_at",{withTimezone:true}).defaultNow().notNull(),
+});
+export const syncBatches = pgTable("sync_batches",{
+ id:uuid("id").defaultRandom().primaryKey(),syncRunId:uuid("sync_run_id").references(()=>syncRuns.id).notNull(),batchNumber:integer("batch_number").notNull(),
+ firstRow:integer("first_row").notNull(),lastRow:integer("last_row").notNull(),status:text("status").notNull(),createdCount:integer("created_count").default(0).notNull(),
+ updatedCount:integer("updated_count").default(0).notNull(),unchangedCount:integer("unchanged_count").default(0).notNull(),reviewCount:integer("review_count").default(0).notNull(),
+ errorCode:text("error_code"),startedAt:timestamp("started_at",{withTimezone:true}).defaultNow().notNull(),finishedAt:timestamp("finished_at",{withTimezone:true}),
+},table=>[uniqueIndex("sync_batches_run_number_uq").on(table.syncRunId,table.batchNumber)]);
 export const facilitySourcePresence = pgTable("facility_source_presence",{
   facilityId:uuid("facility_id").primaryKey().references(()=>facilities.id),sourceType:text("source_type").notNull(),
   lastSnapshotId:uuid("last_snapshot_id").references(()=>syncSourceSnapshots.id),
   missingStreak:integer("missing_streak").default(0).notNull(),lastSeenAt:timestamp("last_seen_at",{withTimezone:true}),
+  currentState:text("current_state").default("UNCHANGED").notNull(),lastTransitionAt:timestamp("last_transition_at",{withTimezone:true}).defaultNow().notNull(),
 });

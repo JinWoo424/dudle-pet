@@ -1,0 +1,206 @@
+{
+  "kind": "MOIS_PET_FUNERAL_NATIONAL_DRY_RUN",
+  "started_at": "2026-09-05T11:53:08.205Z",
+  "finished_at": "2026-09-05T11:53:08.991Z",
+  "contract_checksum": "de33cfd0a85f779b850af70e53abb0101d0eb548dd8831c559c2fc3f269cbe22",
+  "data_sha256": "08bb296663249f99cfb7cfde352729eb4dbce4093c921066e116ef763ef0fd56",
+  "total": 104,
+  "open": 88,
+  "closed": 3,
+  "status_distribution": {
+    "CLOSED": 3,
+    "OPEN": 88,
+    "SUSPENDED": 7,
+    "TEMP_CLOSED": 6
+  },
+  "public_status_distribution": {
+    "01|영업/정상": 88,
+    "02|휴업": 6,
+    "03|폐업": 3,
+    "04|취소/말소/만료/정지/중지": 7
+  },
+  "region_mapped": 104,
+  "region_unmatched": 0,
+  "region_mapping_rate_percent": 100,
+  "region_review_samples": [],
+  "coordinate_valid": 95,
+  "coordinate_missing": 9,
+  "coordinate_invalid": 0,
+  "coordinate_error_rate_percent": 0,
+  "source_id_duplicates": 0,
+  "duplicate_candidates": 0,
+  "review_required": 0,
+  "orphan_regions": 0,
+  "by_province": [
+    {
+      "official_code": null,
+      "province": "강원특별자치도",
+      "api_rows": 3,
+      "open": 2,
+      "closed": 0,
+      "region_mapped": 3,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "경기도",
+      "api_rows": 37,
+      "open": 29,
+      "closed": 2,
+      "region_mapped": 37,
+      "missing_coordinates": 5,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "경상남도",
+      "api_rows": 9,
+      "open": 9,
+      "closed": 0,
+      "region_mapped": 9,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "경상북도",
+      "api_rows": 9,
+      "open": 8,
+      "closed": 0,
+      "region_mapped": 9,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "대구광역시",
+      "api_rows": 2,
+      "open": 2,
+      "closed": 0,
+      "region_mapped": 2,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "대전광역시",
+      "api_rows": 1,
+      "open": 1,
+      "closed": 0,
+      "region_mapped": 1,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "부산광역시",
+      "api_rows": 4,
+      "open": 2,
+      "closed": 1,
+      "region_mapped": 4,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "서울특별시",
+      "api_rows": 1,
+      "open": 1,
+      "closed": 0,
+      "region_mapped": 1,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "세종특별자치시",
+      "api_rows": 2,
+      "open": 1,
+      "closed": 0,
+      "region_mapped": 2,
+      "missing_coordinates": 1,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "울산광역시",
+      "api_rows": 2,
+      "open": 2,
+      "closed": 0,
+      "region_mapped": 2,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "인천광역시",
+      "api_rows": 5,
+      "open": 5,
+      "closed": 0,
+      "region_mapped": 5,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "전남광주통합특별시",
+      "api_rows": 10,
+      "open": 8,
+      "closed": 0,
+      "region_mapped": 10,
+      "missing_coordinates": 1,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "전북특별자치도",
+      "api_rows": 6,
+      "open": 5,
+      "closed": 0,
+      "region_mapped": 6,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "제주특별자치도",
+      "api_rows": 2,
+      "open": 2,
+      "closed": 0,
+      "region_mapped": 2,
+      "missing_coordinates": 0,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "충청남도",
+      "api_rows": 5,
+      "open": 5,
+      "closed": 0,
+      "region_mapped": 5,
+      "missing_coordinates": 1,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "충청북도",
+      "api_rows": 6,
+      "open": 6,
+      "closed": 0,
+      "region_mapped": 6,
+      "missing_coordinates": 1,
+      "review_required": 0
+    }
+  ],
+  "gates": {
+    "complete_stable_response": true,
+    "region_mapping_at_least_99_percent": true,
+    "source_id_duplicate_critical_zero": true,
+    "orphan_region_zero": true,
+    "coordinate_error_reasonable": true,
+    "status_mapping_compatible": true,
+    "sixteen_current_provinces": true
+  },
+  "approved_for_sync": true
+}

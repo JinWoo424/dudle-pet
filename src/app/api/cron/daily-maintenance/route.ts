@@ -4,6 +4,7 @@ import { publicAdapters } from "@/data/adapters/mois";
 import { syncSource } from "@/data/sync";
 import { refreshSeo } from "@/data/seo-maintenance";
 import { getSql } from "@/db/connection";
+export const runtime="nodejs";
 export const maxDuration=60;
 function equal(a:string,b:string){const left=Buffer.from(a),right=Buffer.from(b);return left.length===right.length&&timingSafeEqual(left,right);}
 export async function GET(request:Request){

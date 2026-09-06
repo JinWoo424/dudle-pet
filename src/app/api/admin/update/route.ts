@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSql } from "@/db/connection";
 import { verifyAdminSession } from "@/lib/admin-auth";
 import { limitedForm, sameOrigin } from "@/lib/request-security";
+export const runtime="nodejs";
 const fields=z.enum(["open_24h","night_service","exotic_service","cat_service","parking_available"]);
 const date=z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const schema=z.discriminatedUnion("action",[

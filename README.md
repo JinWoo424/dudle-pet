@@ -2,7 +2,7 @@
 
 기존 Next.js UI를 유지하면서 PostgreSQL/PostGIS 실데이터 경로를 준비하는 서비스입니다.
 
-**현재는 실데이터 전환 완료가 아닙니다.** DB/API/Kakao 설정과 실제 응답 자료가 없어 실제 테이블 생성, 100건 적재, 여수 실데이터 및 지도 마커 검증은 미실행입니다. 구현·검증·남은 조건은 docs/BUILD_REPORT.md에 구분했습니다.
+전국 동물병원·동물약국·동물장묘업은 공식 API 기반으로 적재되어 있습니다. 진료비는 공식 2025 machine-readable 파일이 아직 공개·공급되지 않아 실수치 Import 전 상태이며, 숫자를 추정하거나 공개 화면의 내부 JSON endpoint를 수집원으로 사용하지 않습니다.
 
 ## 실행
 
@@ -37,9 +37,10 @@ SQL migration이 extension/view/trigger/RLS를 포함한 실행 기준입니다.
 
 ## 진료비
 
-공식 파일을 검토해 scripts/import-fees.ts의 내부 JSON 계약으로 변환한 뒤 `pnpm import:fees file.json`을 실행합니다.
+공식 파일을 검토해 scripts/import-fees.ts의 내부 JSON 계약으로 변환한 뒤 `pnpm import:fees file.json --preview`로 먼저 검증하고, 모든 gate 통과 후 `pnpm import:fees file.json --commit`을 실행합니다.
 원본 파일 해시·출처·조사연도·분류·동물/체중 차원과 변경 이력을 보존합니다. 공식 파일을 아직 받지 않았으므로 실수치 import는 수행하지 않았습니다.
 숫자가 없는 항목은 자료 없음이며 0원으로 바꾸지 않습니다.
+성공 batch는 `pnpm import:fees --rollback BATCH_UUID`로 비활성화할 수 있으며 통계 행과 감사 이력은 삭제하지 않습니다. 관리자 화면에서도 동일한 Preview·Import·rollback 흐름을 제공합니다.
 
 ## 관리자와 지도
 
@@ -65,7 +66,7 @@ E2E는 별도 .next-e2e 폴더와 3100번 포트에서 명시적 개발 Mock을 
 
 ## 배포
 
-현재 Git remote가 없으며 push/deploy/DNS 변경은 하지 않았습니다.
+push/deploy/DNS 변경은 별도 승인 단계에서만 수행합니다.
 main을 GitHub에 push한 뒤 Vercel에서 repository root를 Next.js로 import합니다.
 환경변수, DNS, HTTPS, 키 교체, 운영 연락처/개인정보 방침 확인은 SETUP_CHECKLIST.md를 따릅니다.
 광고는 ADSENSE_ENABLED=false로 유지하며 root domain ads.txt는 변경하지 않습니다.

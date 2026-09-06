@@ -1,4 +1,5 @@
 import { sitemapPageCount, urlsForSitemap, xmlEscape, xmlResponse } from "@/lib/sitemap";
+export const runtime="nodejs";
 export async function GET(_request:Request,{params}:{params:Promise<{kind:string}>}){
  const kind=(await params).kind;if(!/^[1-9]\d*\.xml$/.test(kind))return new Response("Not found",{status:404});
  const page=Number(kind.split(".")[0]);if(!Number.isSafeInteger(page))return new Response("Not found",{status:404});

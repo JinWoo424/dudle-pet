@@ -1,4 +1,5 @@
 import { searchFacilities,listRegions } from "@/data/repository";
+export const runtime="nodejs";
 export async function GET(request:Request){
  const query=(new URL(request.url).searchParams.get("q")??"").trim().slice(0,80);
  if(!query)return Response.json({suggestions:[]});

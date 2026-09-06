@@ -30,8 +30,7 @@ const prices: Array<[string, string, number, number, number, number]> = [
 ];
 
 export const mockFeeStatistics: FeeStatisticView[] = prices.flatMap(([itemCode, itemName, minimumPrice, medianPrice, averagePrice, maximumPrice]) => [
-  { itemCode, itemName, region: "여수", regionLevel: "CITY", surveyYear: 2025, minimumPrice, medianPrice, averagePrice, maximumPrice, sampleCount: 18, sourceName: "공식 진료비 조사 (개발용 가상 통계)" },
-  { itemCode, itemName, region: "전남", regionLevel: "PROVINCE", surveyYear: 2025, minimumPrice, medianPrice: Math.round(medianPrice * 1.04), averagePrice: Math.round(averagePrice * 1.03), maximumPrice, sampleCount: 92, sourceName: "공식 진료비 조사 (개발용 가상 통계)" },
-  { itemCode, itemName, region: "전국", regionLevel: "NATIONAL", surveyYear: 2025, minimumPrice, medianPrice: Math.round(medianPrice * 1.12), averagePrice: Math.round(averagePrice * 1.14), maximumPrice, sampleCount: 1240, sourceName: "공식 진료비 조사 (개발용 가상 통계)" },
+  { categoryCode:"MOCK",itemCode, itemName, region: "여수", regionLevel: "CITY", surveyYear: 2025, minimumPrice, medianPrice, averagePrice, maximumPrice, sampleCount: 18, sourceName: "공식 진료비 조사 (개발용 가상 통계)" },
+  { categoryCode:"MOCK",itemCode, itemName, region: "전남", regionLevel: "PROVINCE", surveyYear: 2025, minimumPrice, medianPrice: Math.round(medianPrice * 1.04), averagePrice: Math.round(averagePrice * 1.03), maximumPrice, sampleCount: 92, sourceName: "공식 진료비 조사 (개발용 가상 통계)" },
+  { categoryCode:"MOCK",itemCode, itemName, region: "전국", regionLevel: "NATIONAL", surveyYear: 2025, minimumPrice, medianPrice: Math.round(medianPrice * 1.12), averagePrice: Math.round(averagePrice * 1.14), maximumPrice, sampleCount: 1240, sourceName: "공식 진료비 조사 (개발용 가상 통계)" },
 ]);
-

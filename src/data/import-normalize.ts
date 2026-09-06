@@ -4,11 +4,20 @@ import type { RegionView } from "@/lib/regions";
 import type { NormalizedFacility } from "./adapters/types";
 export function mapRegion(address:string,regions:RegionView[]){
  const terms=normalizeAddress(address).split(" ");
- const province=regions.find(r=>r.level==="PROVINCE"&&[r.name,r.shortName,normalizeAddress(r.name)].includes(terms[0]));
+ const names=(r:RegionView)=>[r.name,r.shortName,...(r.aliases??[])].map(normalizeAddress);
+ const province=regions.find(r=>r.level==="PROVINCE"&&names(r).includes(terms[0]));
  if(!province)return {status:"UNMATCHED" as const};
- const city=regions.find(r=>r.parentId===province.id&&[r.name,r.shortName].includes(terms[1]));
- if(!city)return {status:"REVIEW_REQUIRED" as const,province:province.name};
- const district=regions.find(r=>r.parentId===city.id&&[r.name,r.shortName].includes(terms[2]));
+ const city=regions.find(r=>r.parentId===province.id&&r.level==="CITY"&&names(r).includes(terms[1]));
+ if(!city){
+  const directDistrict=regions.find(r=>r.parentId===province.id&&r.level==="DISTRICT"&&names(r).includes(terms[1]));
+  if(directDistrict)return {status:"MATCHED" as const,regionId:directDistrict.id,province:province.name,district:directDistrict.name};
+  // Sejong is represented as a one-tier special autonomous city. Urban road
+  // addresses commonly omit an 읍/면/동 token, so the official province node
+  // is the most precise region asserted by the source address.
+  if(province.name==="세종특별자치시")return {status:"MATCHED" as const,regionId:province.id,province:province.name};
+  return {status:"REVIEW_REQUIRED" as const,province:province.name};
+ }
+ const district=regions.find(r=>r.parentId===city.id&&r.level==="DISTRICT"&&names(r).includes(terms[2]));
  return {status:"MATCHED" as const,regionId:district?.id??city.id,province:province.name,city:city.name,district:district?.name};
 }
 export function dateOnly(value?:string){
@@ -53,8 +62,17 @@ export function normalizeImport(item:NormalizedFacility,regions:RegionView[],dat
  };
 }
 export function checksum(value:unknown){return createHash("sha256").update(JSON.stringify(value)).digest("hex");}
-export function duplicateCandidate(a:{normalized_name:string;road_address:string|null;jibun_address:string|null;phone_normalized:string|null;latitude?:number|null;longitude?:number|null},b:typeof a){
+export type DuplicateComparable={
+ public_source_id?:string;normalized_name:string;road_address:string|null;jibun_address:string|null;
+ phone_normalized:string|null;license_date?:string|null;latitude?:number|null;longitude?:number|null
+};
+export function duplicateCandidate(a:DuplicateComparable,b:DuplicateComparable){
+ if(a.public_source_id&&b.public_source_id&&a.public_source_id===b.public_source_id)return "SAME_SOURCE_ID";
  const aa=normalizeAddress(a.road_address||a.jibun_address||""),ba=normalizeAddress(b.road_address||b.jibun_address||"");
+ // A distinct management/source ID and a distinct licence date represent a
+ // separate official history even when the facility reused a name or address.
+ // Never collapse a closed licence into a later opening at the same location.
+ if(aa&&aa===ba&&a.public_source_id&&b.public_source_id&&a.public_source_id!==b.public_source_id&&a.license_date&&b.license_date&&String(a.license_date)!==String(b.license_date))return null;
  if(aa&&aa===ba&&a.normalized_name===b.normalized_name)return "NAME_ADDRESS";
  if(aa&&aa===ba&&a.phone_normalized&&a.phone_normalized===b.phone_normalized)return "PHONE_ADDRESS";
  if(a.normalized_name===b.normalized_name&&a.latitude!=null&&a.longitude!=null&&a.latitude===b.latitude&&a.longitude===b.longitude)return "NAME_COORDINATES";

@@ -1,7 +1,7 @@
 import type { FacilityKind } from "@/domain/facility";
 
 export type SourceType = "MOIS_ANIMAL_HOSPITAL" | "MOIS_ANIMAL_PHARMACY" | "MOIS_PET_FUNERAL";
-export interface FetchParams { page: number; pageSize: number }
+export interface FetchParams { page: number; pageSize: number; filters?:Record<string,string> }
 export interface RawPage { items: unknown[]; totalCount?: number; raw: unknown }
 export interface NormalizedFacility {
   sourceType: SourceType; facilityType: FacilityKind; externalId: string; name: string; phone?: string; roadAddress?: string; jibunAddress?: string;

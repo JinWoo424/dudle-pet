@@ -26,8 +26,9 @@ describe("explicit API contract and 100-record normalization fixture",()=>{
  it("validates province/city hierarchy",()=>{expect(mapRegion("광주광역시 여수시 학동",developmentRegions).status).toBe("REVIEW_REQUIRED");});
  it("never merges names alone",async()=>{
   const a=normalizeImport(await adapter.normalize(fixtureRecords[0]),developmentRegions,"ISO_OFFSET");
-  expect(duplicateCandidate(a,{...a,road_address:"전남 여수시 다른로 123",phone_normalized:null})).toBeNull();
+  expect(duplicateCandidate(a,{...a,public_source_id:"different-name-only",road_address:"전남 여수시 다른로 123",phone_normalized:null})).toBeNull();
   expect(duplicateCandidate(a,{...a,public_source_id:"different"} as typeof a)).toBe("NAME_ADDRESS");
+  expect(duplicateCandidate({...a,public_source_id:"old",license_date:"2020-01-01"},{...a,public_source_id:"new",license_date:"2024-01-01"})).toBeNull();
  });
  it("rejects invalid calendar dates and missing timezone",()=>{expect(()=>dateOnly("20250230")).toThrow();expect(()=>sourceTimestamp("2025-01-01 12:00:00","ISO_OFFSET")).toThrow();});
 });

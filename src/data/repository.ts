@@ -26,11 +26,11 @@ export function mapFacility(row: Row): FacilityView {
  };
 }
 const databaseRegions=unstable_cache(async():Promise<RegionView[]>=>{
- const rows = await getSql()`SELECT id,parent_id,level,name,short_name,full_slug FROM regions ORDER BY full_slug`;
- return rows.map(r => ({ id:r.id, parentId:r.parent_id ?? undefined, level:r.level, name:r.name, shortName:r.short_name, fullSlug:r.full_slug }));
-},["region-registry-v1"],{revalidate:3600,tags:["regions"]});
+ const rows = await getSql()`SELECT r.id,r.parent_id,r.level,r.name,r.short_name,r.full_slug,coalesce(array_agg(a.alias_name) FILTER(WHERE a.alias_name IS NOT NULL),'{}') AS aliases,coalesce(array_agg(a.alias_slug) FILTER(WHERE a.alias_slug IS NOT NULL),'{}') AS alias_slugs FROM regions r LEFT JOIN region_aliases a ON a.region_id=r.id WHERE r.is_active GROUP BY r.id ORDER BY r.full_slug`;
+ return rows.map(r => ({ id:r.id, parentId:r.parent_id ?? undefined, level:r.level, name:r.name, shortName:r.short_name, fullSlug:r.full_slug, aliases:r.aliases, aliasSlugs:r.alias_slugs }));
+},["region-registry-v2"],{revalidate:3600,tags:["regions"]});
 export async function listRegions():Promise<RegionView[]>{return isMockMode()?developmentRegions:databaseRegions();}
-export async function resolveRegion(slug: string) { return (await listRegions()).find(r => r.fullSlug === slug) ?? null; }
+export async function resolveRegion(slug: string) { return (await listRegions()).find(r => r.fullSlug === slug || r.aliasSlugs?.includes(slug)) ?? null; }
 export async function queryFacilities(query: FacilityQuery = {}) {
  const page = Number.isFinite(query.page) ? Math.max(1, Math.min(10000, Math.floor(query.page!))) : 1; const size = 30;
  if (isMockMode()) {
@@ -76,15 +76,32 @@ export async function queryFacilities(query: FacilityQuery = {}) {
 export async function listFacilities(type?: FacilityKind) { return (await queryFacilities({ type })).facilities; }
 export const getFacility=cache(async(id:string)=>(await queryFacilities({id})).facilities[0]??null);
 export async function searchFacilities(query: string) { return (await queryFacilities({ search: query })).facilities; }
-export async function listFeeStatistics(itemCode?: string, regionSlug?: string): Promise<FeeStatisticView[]> {
- if (isMockMode()) return mockFeeStatistics.filter(f => (!itemCode || f.itemCode===itemCode) && (!regionSlug || regionSlug==="jeonnam/yeosu" || regionSlug==="jeonnam")).map(f=>({...f,regionSlug:f.regionLevel==="CITY"?"jeonnam/yeosu":f.regionLevel==="PROVINCE"?"jeonnam":undefined}));
- const sql = getSql();
- const rows = await sql`SELECT m.*,r.full_slug FROM medical_fee_statistics m LEFT JOIN regions r ON r.id=m.region_id
- WHERE (${itemCode ?? null}::text IS NULL OR m.item_code=${itemCode ?? null})
- AND (${regionSlug ?? null}::text IS NULL OR r.full_slug=${regionSlug ?? null} OR m.region_level='NATIONAL' OR (m.region_level='PROVINCE' AND r.full_slug=split_part(${regionSlug ?? ""},'/',1)))
- AND m.survey_year=(SELECT max(survey_year) FROM medical_fee_statistics)
- ORDER BY m.item_code,m.region_level,m.animal_type,m.weight_class`;
- return rows.map(r => ({ itemCode:r.item_code,itemName:r.item_name,region:r.region_level==="NATIONAL"?"전국":r.city||r.province,regionLevel:r.region_level,surveyYear:r.survey_year,minimumPrice:r.minimum_price,medianPrice:r.median_price,averagePrice:r.average_price,maximumPrice:r.maximum_price,sampleCount:r.sample_count,sourceName:r.source_name,sourceUrl:r.source_url,sourceDate:r.source_date,regionSlug:r.full_slug,animalType:r.animal_type,weightClass:r.weight_class }));
+export async function listFeeStatistics(itemCode?: string, regionSlug?: string,filters:{animalType?:string;weightClass?:string}={}): Promise<FeeStatisticView[]> {
+ if (isMockMode()) return mockFeeStatistics.filter(f => (!itemCode || f.itemCode===itemCode) && (!regionSlug || regionSlug==="jeonnam/yeosu" || regionSlug==="jeonnam")&&(!filters.animalType||f.animalType===filters.animalType)&&(!filters.weightClass||f.weightClass===filters.weightClass)).map(f=>({...f,regionSlug:f.regionLevel==="CITY"?"jeonnam/yeosu":f.regionLevel==="PROVINCE"?"jeonnam":undefined}));
+ const sql = getSql();let rows:Row[];
+ if(!regionSlug&&!itemCode){
+  rows=await sql`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1)
+   SELECT DISTINCT ON(m.item_code,m.animal_type,m.weight_class) m.*,r.full_slug FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id LEFT JOIN regions r ON r.id=m.current_region_id
+   WHERE (${filters.animalType??null}::text IS NULL OR m.animal_type::text=${filters.animalType??null}) AND (${filters.weightClass??null}::text IS NULL OR m.weight_class::text=${filters.weightClass??null})
+   ORDER BY m.item_code,m.animal_type,m.weight_class,CASE m.region_level WHEN 'NATIONAL' THEN 0 WHEN 'PROVINCE' THEN 1 ELSE 2 END`;
+ }else{
+  rows=await sql`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1),target AS (SELECT id FROM regions WHERE full_slug=${regionSlug??""} AND is_active),survey_context AS (
+    SELECT DISTINCT m.survey_province_name FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id JOIN target t ON t.id=m.current_region_id WHERE m.region_level='CITY'
+   ) SELECT m.*,r.full_slug FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id LEFT JOIN regions r ON r.id=m.current_region_id
+   WHERE (${itemCode??null}::text IS NULL OR m.item_code=${itemCode??null})
+   AND (${filters.animalType??null}::text IS NULL OR m.animal_type::text=${filters.animalType??null}) AND (${filters.weightClass??null}::text IS NULL OR m.weight_class::text=${filters.weightClass??null})
+   AND (m.current_region_id=(SELECT id FROM target) OR (${Boolean(itemCode)} AND (m.region_level='NATIONAL' OR (m.region_level='PROVINCE' AND m.survey_province_name IN(SELECT survey_province_name FROM survey_context)))))
+   ORDER BY m.item_code,CASE m.region_level WHEN 'CITY' THEN 0 WHEN 'PROVINCE' THEN 1 ELSE 2 END,m.animal_type,m.weight_class`;
+ }
+ return rows.map(r => ({ categoryCode:String(r.category_code),itemCode:String(r.item_code),itemName:String(r.item_name),region:r.region_level==="NATIONAL"?"전국":String(r.survey_city_name||r.survey_province_name||"조사 지역"),regionLevel:r.region_level as FeeStatisticView["regionLevel"],surveyYear:Number(r.survey_year),minimumPrice:r.minimum_price==null?null:Number(r.minimum_price),medianPrice:r.median_price==null?null:Number(r.median_price),averagePrice:r.average_price==null?null:Number(r.average_price),maximumPrice:r.maximum_price==null?null:Number(r.maximum_price),sampleCount:r.sample_count==null?null:Number(r.sample_count),sourceName:String(r.source_name),sourceUrl:r.source_url?String(r.source_url):undefined,sourceDate:r.source_date?String(r.source_date):undefined,regionSlug:r.full_slug?String(r.full_slug):undefined,surveyRegionCode:r.survey_region_code?String(r.survey_region_code):undefined,surveyProvinceName:r.survey_province_name?String(r.survey_province_name):undefined,surveyCityName:r.survey_city_name?String(r.survey_city_name):undefined,regionMatchStatus:r.region_match_status as FeeStatisticView["regionMatchStatus"],animalType:String(r.animal_type),weightClass:String(r.weight_class) }));
+}
+export async function listFeeRegionLinks(regionSlug:string){
+ if(isMockMode())return [];
+ const rows=await getSql()`WITH active_batch AS (SELECT id FROM fee_import_batches WHERE status='SUCCESS' ORDER BY survey_year DESC,imported_at DESC LIMIT 1),target AS (SELECT full_slug FROM regions WHERE full_slug=${regionSlug} AND is_active)
+  SELECT r.full_slug,r.name,count(*)::int AS count,max(m.survey_year)::int AS survey_year,min(m.survey_province_name) AS survey_province_name
+  FROM medical_fee_statistics m JOIN active_batch b ON b.id=m.import_batch_id JOIN regions r ON r.id=m.current_region_id JOIN target t ON r.full_slug=t.full_slug OR starts_with(r.full_slug,t.full_slug||'/')
+  GROUP BY r.id ORDER BY r.full_slug`;
+ return rows.map(row=>({slug:String(row.full_slug),name:String(row.name),count:Number(row.count),surveyYear:Number(row.survey_year),surveyProvinceName:String(row.survey_province_name??"")}));
 }
 export async function nearbyFacilities(input: { latitude:number;longitude:number;radiusMeters:number;type?:FacilityKind;excludeId?:string;feature?:Feature }) {
  if (isMockMode()) return mockRows().filter(f=>f.id!==input.excludeId && (!input.type||f.type===input.type) && (!input.feature||f.features.open24h==="YES") && f.latitude!=null && f.longitude!=null).map(f=>({...f,distanceMeters:distanceMeters(input,{latitude:f.latitude!,longitude:f.longitude!})})).filter(f=>f.distanceMeters<=input.radiusMeters).sort((a,b)=>a.distanceMeters-b.distanceMeters).slice(0,30);

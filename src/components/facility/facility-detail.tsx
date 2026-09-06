@@ -10,7 +10,13 @@ import { formatWon } from "@/lib/format";
 import { directionsUrl, facilityPath, safeJson, statusLabels } from "@/lib/facility-display";
 export async function FacilityDetail({facility,typeLabel="동물병원",typePath="hospital"}:{facility:FacilityView;typeLabel?:string;typePath?:string}) {
  const hasCoordinates=facility.latitude!=null&&facility.longitude!=null;
- const around=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,excludeId:facility.id}):[];
+ let pharmacyRadius=3000;
+ let nearbyPharmacies=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:pharmacyRadius,type:"ANIMAL_PHARMACY",excludeId:facility.id}):[];
+ if(hasCoordinates&&nearbyPharmacies.length<2){pharmacyRadius=5000;nearbyPharmacies=await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:pharmacyRadius,type:"ANIMAL_PHARMACY",excludeId:facility.id});}
+ if(hasCoordinates&&nearbyPharmacies.length<2){pharmacyRadius=10000;nearbyPharmacies=await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:pharmacyRadius,type:"ANIMAL_PHARMACY",excludeId:facility.id});}
+ const nearbyHospitals=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,type:"ANIMAL_HOSPITAL",excludeId:facility.id}):[];
+ const nearbyFunerals=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,type:"PET_FUNERAL",excludeId:facility.id}):[];
+ const around=[...nearbyPharmacies,...nearbyHospitals,...nearbyFunerals];
  const fees=facility.regionSlug?await listFeeStatistics("xray",facility.regionSlug):[];
  const fee=fees.find(f=>f.regionSlug===facility.regionSlug && f.regionLevel==="CITY");
  const region=[facility.province,facility.city,facility.district].filter(Boolean).join(" ");
@@ -28,5 +34,5 @@ export async function FacilityDetail({facility,typeLabel="동물병원",typePath
  <section className="card detail-section"><h2>지도</h2><KakaoMap facilities={[facility]}/></section>
  {facility.type==="ANIMAL_HOSPITAL"&&<section className="card detail-section"><h2>{region} X-ray 진료비</h2>{fee?<><strong>{formatWon(fee.medianPrice)}</strong><p>{fee.sourceName} · {fee.surveyYear}년</p></>:<p className="muted">이 지역의 공식 진료비 통계는 아직 등록되지 않았습니다.</p>}<p className="quality-note">지역 통계이며 이 병원의 실제 가격이 아닙니다.</p>{facility.regionSlug&&<Link href={`/cost/${facility.regionSlug}/xray`}>지역 통계 확인</Link>}</section>}
  <section className="card detail-section"><h2>정보수정 요청</h2><p className="muted">전화번호, 주소, 운영정보가 다르면 알려주세요.</p><Link className="secondary-button" href={`/report?facility=${facility.id}`}>정보수정 요청</Link></section>
- </div><aside className="detail-aside">{(["ANIMAL_PHARMACY","ANIMAL_HOSPITAL","PET_FUNERAL"] as const).map((kind,i)=><section key={kind}><h2>{["주변 동물약국","가까운 다른 병원","주변 장례시설"][i]}</h2>{around.filter(f=>f.type===kind).slice(0,2).map(f=><FacilityCard key={f.id} facility={f} compact/>)}{!around.some(f=>f.type===kind)&&<p className="muted">{hasCoordinates?"직선거리 10km 내 확인된 시설이 없습니다.":"기준 좌표가 없어 거리를 계산할 수 없습니다."}</p>}</section>)}</aside></div></div>;
+ </div><aside className="detail-aside">{(["ANIMAL_PHARMACY","ANIMAL_HOSPITAL","PET_FUNERAL"] as const).map((kind,i)=><section key={kind}><h2>{kind==="ANIMAL_PHARMACY"?`주변 동물약국 (직선거리 ${pharmacyRadius/1000}km 이내)`:["","가까운 다른 병원","주변 장례시설"][i]}</h2>{around.filter(f=>f.type===kind).slice(0,2).map(f=><FacilityCard key={f.id} facility={f} compact/>)}{!around.some(f=>f.type===kind)&&<p className="muted">{hasCoordinates?`직선거리 ${kind==="ANIMAL_PHARMACY"?pharmacyRadius/1000:10}km 내 확인된 시설이 없습니다.`:"기준 좌표가 없어 거리를 계산할 수 없습니다."}</p>}</section>)}</aside></div></div>;
 }

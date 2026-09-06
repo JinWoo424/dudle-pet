@@ -13,6 +13,7 @@
 - [ ] NEXT_PUBLIC_SITE_URL=https://pet.dudle.co.kr
 - [ ] DATA_MODE=database
 - [ ] DATABASE_URL (서버용 pooled), DIRECT_URL (migration용)
+- [ ] `SUPABASE_CA_CERT`: Vercel encrypted environment variable에 공식 CA PEM 전체를 multiline 값으로 저장. 로컬 `SUPABASE_CA_CERT_PATH`와 같은 Windows 절대경로는 production에 설정하지 않음.
 - [ ] PUBLIC_DATA_SERVICE_KEY
 - [ ] NEXT_PUBLIC_KAKAO_MAP_JS_KEY, KAKAO_REST_API_KEY
 - [ ] ADMIN_EMAIL, ADMIN_PASSWORD_HASH (scrypt), ADMIN_SESSION_SECRET (32자 이상)
@@ -34,6 +35,8 @@
 - [ ] 각 5건 sample → 필드 확인 → 100건 import → 수동 검수 승인.
 - [ ] 여수 실제 이름·주소·전화·상태·좌표·상세 페이지 확인.
 - [ ] 약국/장례 실제 시설, 진료비 공식 출처 확인.
+- [ ] 2025 진료비 공식 machine-readable 파일을 확보한 경우에만 관리자 Preview → Import. 현재 공개 화면의 문서화되지 않은 JSON endpoint를 production 수집원으로 사용하지 않음.
+- [ ] 진료비 Preview에서 20개 항목, historical region, 모든 가격 범위, duplicate key가 통과했는지 확인.
 - [ ] 실제 Kakao SDK markers/selection 및 전화·길찾기 확인.
 - [ ] production Mock/가상가격/개발 배너가 없음.
 - [ ] 관리자 로그인/검증 저장/만료/신고 처리/감사 이력 실검증.
@@ -53,3 +56,10 @@
 - [ ] 375/390/768/1440px production QA.
 - [ ] 광고 script 없음, Auto Ads OFF 유지.
 - [ ] root dudle.co.kr ads.txt의 기존 publisher ID 확인(이번 작업에서 변경하지 않음).
+
+## Production TLS와 Runtime
+
+- [ ] Supabase 공식 CA PEM은 Vercel encrypted `SUPABASE_CA_CERT`로 저장하고 줄바꿈이 보존되는지 Preview/Production에서 확인.
+- [ ] `rejectUnauthorized=true` 유지. `NODE_TLS_REJECT_UNAUTHORIZED=0`, `rejectUnauthorized=false`, SSL 비활성화 금지.
+- [ ] DB·Admin·Cron·동적 sitemap route가 Node.js runtime인지 배포 결과에서 확인.
+- [ ] Preview deployment에서 DB health, PostGIS, 관리자 로그인, cron 인증 실패/성공 경로를 점검한 후 Production 승격.

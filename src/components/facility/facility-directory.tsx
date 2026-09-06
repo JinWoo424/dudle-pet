@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FacilityDetail } from "./facility-detail";
@@ -22,6 +22,10 @@ export async function loadDirectory(type:FacilityKind, segments:string[], query:
  if(route.feature && type!=="ANIMAL_HOSPITAL") notFound();
  const region=route.fullSlug ? await resolveRegion(route.fullSlug):null;
  if(route.fullSlug && !region) notFound();
+ if(region&&route.fullSlug!==region.fullSlug){
+  const tail=route.feature??route.id;
+  permanentRedirect(`/${typePaths[type]}/${region.fullSlug}${tail?`/${tail}`:""}`);
+ }
  if(route.id){
   const facility=await getFacility(route.id);
   if(!facility || facility.type!==type || facility.regionSlug!==route.fullSlug) notFound();

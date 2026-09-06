@@ -14,7 +14,8 @@ function snapshot(rows:Array<{business_status:string;region_id:unknown;geo_statu
  return {total:rows.length,closed:rows.filter(r=>r.business_status==="CLOSED").length,invalidCoordinates:rows.filter(r=>r.geo_status==="INVALID"||r.geo_status==="REVIEW_REQUIRED").length,
  byRegion:rows.reduce<Record<string,number>>((out,r)=>{const key=String(r.region_id??"unmatched");out[key]=(out[key]??0)+1;return out;},{})};
 }
-export async function syncSource(adapter:Adapter,stage:"sample100"|"full",deadline=Date.now()+30*60*1000){
+export async function syncSource(adapter:Adapter,stage:"sample100"|"targeted"|"full",deadline=Date.now()+30*60*1000,options?:{filters?:Record<string,string>;rawGuard?:(raw:unknown)=>boolean}){
+ let phase="PREFLIGHT";
  if(dataMode()!=="database")throw new Error("SYNC_REQUIRES_DATABASE_MODE");
  const c=await adapter.contract();
  if(!c.mapping||!c.response)throw new Error("MAPPING_NOT_CONFIRMED");
@@ -32,16 +33,17 @@ export async function syncSource(adapter:Adapter,stage:"sample100"|"full",deadli
    const approvals=await lock`SELECT id FROM sync_source_snapshots WHERE source_type=${adapter.sourceType} AND contract_checksum=${checksum(c)} AND record_count=100 AND approved_at IS NOT NULL LIMIT 1`;
    if(!approvals.length)throw new Error("HUNDRED_RECORD_REVIEW_REQUIRED");
   }
-  const [run]=await lock`INSERT INTO sync_runs(source_type,requested_count) VALUES(${adapter.sourceType},${stage==="sample100"?100:0}) RETURNING id`;runId=run.id;
+  phase="CREATE_RUN";const [run]=await lock`INSERT INTO sync_runs(source_type,requested_count) VALUES(${adapter.sourceType},${stage==="full"?0:100}) RETURNING id`;runId=run.id;
   const rawRows:Array<{raw:unknown;rawId:string}>=[];
   let total:number|undefined;
-  for(let page=1;;page++){
+  phase="FETCH_AND_STORE_RAW";for(let page=1;;page++){
    if(Date.now()>deadline)throw new Error("SYNC_TIME_BUDGET_EXCEEDED");
-   const data=await adapter.fetchPage({page,pageSize:100});
+   const data=await adapter.fetchPage({page,pageSize:100,filters:options?.filters});
    if(total===undefined)total=data.totalCount;
-   if(total===undefined||total!==data.totalCount||total<100||total>200000||data.items.length>100)throw new Error("INVALID_SNAPSHOT_TOTAL");
+   if(total===undefined||total!==data.totalCount||total>200000||data.items.length>100||stage==="sample100"&&total<100||stage==="targeted"&&(total<1||total>100))throw new Error("INVALID_SNAPSHOT_TOTAL");
    if(!data.items.length&&rawRows.length<total)throw new Error("INCOMPLETE_PAGINATION");
    for(const itemRaw of data.items){
+    if(options?.rawGuard&&!options.rawGuard(itemRaw))throw new Error("TARGET_FILTER_GUARD_FAILED");
     const raw=redactSample(itemRaw,process.env.PUBLIC_DATA_SERVICE_KEY??"");
     const hash=checksum(raw);
     const field=c.mapping.fields.externalId!;
@@ -53,12 +55,12 @@ export async function syncSource(adapter:Adapter,stage:"sample100"|"full",deadli
    }
    if(stage==="sample100"||rawRows.length>=total)break;
   }
-  if(stage==="sample100"&&rawRows.length!==100||stage==="full"&&rawRows.length!==total)throw new Error("INCOMPLETE_SNAPSHOT");
-  const regionRows=await lock`SELECT id,parent_id,level,name,short_name,full_slug FROM regions`;
-  const regions:RegionView[]=regionRows.map(r=>({id:r.id,parentId:r.parent_id,level:r.level,name:r.name,shortName:r.short_name,fullSlug:r.full_slug}));
+  if(stage==="sample100"&&rawRows.length!==100||stage!=="sample100"&&rawRows.length!==total)throw new Error("INCOMPLETE_SNAPSHOT");
+  phase="LOAD_REGIONS";const regionRows=await lock`SELECT r.id,r.parent_id,r.level,r.name,r.short_name,r.full_slug,coalesce(array_agg(a.alias_name) FILTER(WHERE a.alias_name IS NOT NULL),'{}') AS aliases FROM regions r LEFT JOIN region_aliases a ON a.region_id=r.id WHERE r.is_active GROUP BY r.id`;
+  const regions:RegionView[]=regionRows.map(r=>({id:r.id,parentId:r.parent_id,level:r.level,name:r.name,shortName:r.short_name,fullSlug:r.full_slug,aliases:r.aliases}));
   if(!regions.length)throw new Error("REGIONS_NOT_IMPORTED");
   const incoming:Array<{data:Incoming;rawId:string}>=[];const seen=new Set<string>();
-  for(const record of rawRows){
+  phase="NORMALIZE";for(const record of rawRows){
    try{
     const item=await adapter.normalize(record.raw);
     if(!adapter.validate(item).valid)throw new Error("INVALID_NORMALIZED_RECORD");
@@ -77,7 +79,7 @@ export async function syncSource(adapter:Adapter,stage:"sample100"|"full",deadli
     throw new Error("NORMALIZATION_FAILURE");
    }
   }
-  const previous=await lock`SELECT * FROM facilities WHERE public_source=${adapter.sourceType}`;
+  phase="LOAD_EXISTING";const previous=await lock`SELECT * FROM facilities WHERE public_source=${adapter.sourceType}`;
   const knownBefore=previous.filter(r=>r.business_status!=="UNKNOWN").length;
   const unknownAfter=incoming.filter(r=>r.data.business_status==="UNKNOWN").length;
   const statusRegression=knownBefore>0&&unknownAfter>Math.max(5,incoming.length*.1);
@@ -88,10 +90,13 @@ export async function syncSource(adapter:Adapter,stage:"sample100"|"full",deadli
    return {source:adapter.sourceType,status:"BLOCKED_ANOMALY",runId};
   }
   if(Date.now()>deadline)throw new Error("SYNC_TIME_BUDGET_EXCEEDED");
-  const result=await lock.begin(async tx=>{
+  // reserve() pins the advisory-lock connection but intentionally exposes no
+  // transaction helper. Commit the write set through the pool while the
+  // reserved connection continues to hold the source lock.
+  phase="UPSERT_SNAPSHOT";const result=await sql.begin(async tx=>{
    let created=0,updated=0,unchanged=0,held=0;
    const [snap]=await tx`INSERT INTO sync_source_snapshots(source_type,sync_run_id,record_count,complete,contract_checksum) VALUES(${adapter.sourceType},${runId!},${incoming.length},${stage==="full"},${checksum(c)}) RETURNING id`;
-   const candidates=[...previous] as unknown as Array<Incoming&{id:string}>;
+   phase="UPSERT_ROWS";const candidates=[...previous] as unknown as Array<Incoming&{id:string}>;
    for(const {data,rawId} of incoming){
     const old=candidates.find(r=>r.public_source_id===data.public_source_id);
     if(old&&old.source_updated_at&&(!data.source_updated_at||+new Date(old.source_updated_at)>+data.source_updated_at)){
@@ -127,9 +132,10 @@ export async function syncSource(adapter:Adapter,stage:"sample100"|"full",deadli
    return {created,updated,unchanged,held,snapshotId:snap.id};
   });
   return {source:adapter.sourceType,status:result.held?"PARTIAL":"SUCCESS",runId,...result};
- }catch{
-  if(runId)await lock`UPDATE sync_runs SET status='FAILED',finished_at=now(),error_message='SYNC_FAILED_CHECK_CONTRACT_AND_SOURCE' WHERE id=${runId}`;
-  throw new Error("SYNC_FAILED_CHECK_CONTRACT_AND_SOURCE");
+ }catch(error){
+  const dbCode=typeof (error as {code?:unknown}).code==="string"&&/^[A-Z0-9_]{2,20}$/.test((error as {code:string}).code)?`_${(error as {code:string}).code}`:"";
+  if(runId)await lock`UPDATE sync_runs SET status='FAILED',finished_at=now(),error_message=${`SYNC_FAILED_${phase}${dbCode}`} WHERE id=${runId}`;
+  throw new Error(`SYNC_FAILED_${phase}${dbCode}`);
  }finally{
   try{if(locked)await lock`SELECT pg_advisory_unlock(hashtext(${adapter.sourceType}))`;}finally{lock.release();}
  }

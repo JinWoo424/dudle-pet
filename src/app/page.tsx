@@ -59,9 +59,9 @@ export default function HomePage() {
             <span className="eyebrow">많이 찾는 지역</span>
             <h2>지역별 동물병원</h2>
             <div className="chip-list">
-              <Link className="chip-link" href="/hospital/jeonnam/yeosu">전남 여수</Link>
-              <Link className="chip-link" href="/hospital/jeonnam/suncheon">전남 순천</Link>
-              <Link className="chip-link" href="/hospital/gwangju">광주</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju/yeosu">여수</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju/suncheon">순천</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju">전남광주</Link>
               <Link className="chip-link" href="/hospital/seoul">서울</Link>
               <Link className="chip-link" href="/hospital/busan">부산</Link>
             </div>
@@ -69,9 +69,7 @@ export default function HomePage() {
           <div className="card content-panel">
             <span className="eyebrow">많이 확인하는 진료비</span>
             <h2>항목별 지역 통계</h2>
-            <div className="chip-list">
-              {[["초진", "consultation"], ["백신", "vaccination"], ["혈액검사", "blood-test"], ["X-ray", "xray"], ["초음파", "ultrasound"], ["CT", "ct"], ["MRI", "mri"]].map(([label, slug]) => <Link className="chip-link" href={`/cost/jeonnam/yeosu/${slug}`} key={slug}>{label}</Link>)}
-            </div>
+            <p>검증된 공식 파일이 등록된 항목만 공개합니다. 자료가 없는 항목에 가상 가격을 표시하지 않습니다.</p><Link className="chip-link" href="/cost">공식 진료비 데이터 상태 확인</Link>
           </div>
         </div>
       </section>

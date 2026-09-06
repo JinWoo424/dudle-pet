@@ -1,4 +1,4 @@
-export interface RegionView { id: number; parentId?: number; level: "PROVINCE" | "CITY" | "DISTRICT"; name: string; shortName: string; fullSlug: string }
+export interface RegionView { id: number; parentId?: number; level: "PROVINCE" | "CITY" | "DISTRICT"; name: string; shortName: string; fullSlug: string; aliases?: string[]; aliasSlugs?:string[] }
 export const developmentRegions: RegionView[] = [
  { id: 1, level: "PROVINCE", name: "전라남도", shortName: "전남", fullSlug: "jeonnam" },
  { id: 2, parentId: 1, level: "CITY", name: "여수시", shortName: "여수", fullSlug: "jeonnam/yeosu" },

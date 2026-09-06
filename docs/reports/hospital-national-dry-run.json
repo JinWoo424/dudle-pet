@@ -1,0 +1,303 @@
+{
+  "kind": "MOIS_ANIMAL_HOSPITAL_NATIONAL_DRY_RUN",
+  "started_at": "2026-09-05T05:51:45.103Z",
+  "finished_at": "2026-09-05T05:53:10.261Z",
+  "contract_checksum": "f218b8d1e56e9185fd49cd0f6ea0b8693e60edf26d63549f3ec26a9a1e82e1cc",
+  "data_sha256": "01926fa35769ffd6bc8b4e9197d0d76a5d959fdf78b1d0b6f1ea98ba62ef7124",
+  "total": 10617,
+  "open": 5474,
+  "closed": 5056,
+  "status_distribution": {
+    "CLOSED": 5056,
+    "OPEN": 5474,
+    "SUSPENDED": 59,
+    "TEMP_CLOSED": 28
+  },
+  "public_status_distribution": {
+    "01|영업/정상": 5474,
+    "02|휴업": 28,
+    "03|폐업": 5056,
+    "04|취소/말소/만료/정지/중지": 59
+  },
+  "region_mapped": 10601,
+  "region_unmatched": 16,
+  "region_mapping_rate_percent": 99.849,
+  "region_review_samples": [
+    {
+      "public_source_id": "349000001020070002",
+      "road_address": "인천광역시 중구 연안부두로53번길 35, A동 2층 (항동7가, 예지상가)",
+      "jibun_address": "인천광역시 중구 항동7가 58-84",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020070001",
+      "road_address": "인천광역시 중구 우현로 51 (내동)",
+      "jibun_address": "인천광역시 중구 내동 209-42",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020050003",
+      "road_address": "인천광역시 중구 제물량로 60-1 (신흥동3가)",
+      "jibun_address": "인천광역시 중구 신흥동3가 6-11",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020050002",
+      "road_address": "인천광역시 중구 제물량로 60-1 (신흥동3가)",
+      "jibun_address": "인천광역시 중구 신흥동3가 6-11",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020050001",
+      "road_address": "인천광역시 중구 우현로 52-1 (경동)",
+      "jibun_address": "인천광역시 중구 경동 240-14",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "356000001020040005",
+      "road_address": null,
+      "jibun_address": "인천광역시 서구 불노동 319-10",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020040002",
+      "road_address": "인천광역시 중구 인중로 134 (신생동,이마트 동인천점 3층)",
+      "jibun_address": "인천광역시 중구 신생동 38 이마트 동인천점 3층",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "356000001020040001",
+      "road_address": null,
+      "jibun_address": "인천광역시 서구 불노동 319-10",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020030002",
+      "road_address": "인천광역시 중구 우현로67번길 40-1 (인현동)",
+      "jibun_address": "인천광역시 중구 인현동 27-37",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020030001",
+      "road_address": null,
+      "jibun_address": "인천광역시 중구 신흥동3가 6-11",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020020001",
+      "road_address": "인천광역시 중구 제물량로 84 (신흥동2가)",
+      "jibun_address": "인천광역시 중구 신흥동2가 16-37 4통2반",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020010002",
+      "road_address": null,
+      "jibun_address": "인천광역시 중구 경동 94",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020010003",
+      "road_address": "인천광역시 중구 우현로90번길 27, 1층 (용동)",
+      "jibun_address": "인천광역시 중구 용동 133",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001020010001",
+      "road_address": "인천광역시 중구 우현로 52-1 (경동)",
+      "jibun_address": "인천광역시 중구 경동 240-14",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001019940001",
+      "road_address": "인천광역시 중구 개항로 61, 청담한복 (경동)",
+      "jibun_address": "인천광역시 중구 경동 239-7 청담한복",
+      "region_status": "REVIEW_REQUIRED"
+    },
+    {
+      "public_source_id": "349000001019900001",
+      "road_address": "인천광역시 중구 샛골로 59, 1층 103호 (도원동)",
+      "jibun_address": "인천광역시 중구 도원동 12-91 5통1반",
+      "region_status": "REVIEW_REQUIRED"
+    }
+  ],
+  "coordinate_valid": 9207,
+  "coordinate_missing": 1410,
+  "coordinate_invalid": 0,
+  "coordinate_error_rate_percent": 0,
+  "source_id_duplicates": 0,
+  "duplicate_candidates": 311,
+  "review_required": 311,
+  "orphan_regions": 0,
+  "by_province": [
+    {
+      "official_code": null,
+      "province": "강원특별자치도",
+      "api_rows": 305,
+      "open": 169,
+      "closed": 134,
+      "region_mapped": 305,
+      "missing_coordinates": 36,
+      "review_required": 5
+    },
+    {
+      "official_code": null,
+      "province": "경기도",
+      "api_rows": 2735,
+      "open": 1408,
+      "closed": 1303,
+      "region_mapped": 2735,
+      "missing_coordinates": 391,
+      "review_required": 90
+    },
+    {
+      "official_code": null,
+      "province": "경상남도",
+      "api_rows": 689,
+      "open": 366,
+      "closed": 321,
+      "region_mapped": 689,
+      "missing_coordinates": 78,
+      "review_required": 10
+    },
+    {
+      "official_code": null,
+      "province": "경상북도",
+      "api_rows": 612,
+      "open": 365,
+      "closed": 237,
+      "region_mapped": 612,
+      "missing_coordinates": 42,
+      "review_required": 4
+    },
+    {
+      "official_code": null,
+      "province": "대구광역시",
+      "api_rows": 425,
+      "open": 216,
+      "closed": 205,
+      "region_mapped": 425,
+      "missing_coordinates": 63,
+      "review_required": 7
+    },
+    {
+      "official_code": null,
+      "province": "대전광역시",
+      "api_rows": 269,
+      "open": 119,
+      "closed": 146,
+      "region_mapped": 269,
+      "missing_coordinates": 41,
+      "review_required": 5
+    },
+    {
+      "official_code": null,
+      "province": "부산광역시",
+      "api_rows": 508,
+      "open": 283,
+      "closed": 223,
+      "region_mapped": 508,
+      "missing_coordinates": 40,
+      "review_required": 17
+    },
+    {
+      "official_code": null,
+      "province": "서울특별시",
+      "api_rows": 2232,
+      "open": 979,
+      "closed": 1238,
+      "region_mapped": 2232,
+      "missing_coordinates": 268,
+      "review_required": 118
+    },
+    {
+      "official_code": null,
+      "province": "세종특별자치시",
+      "api_rows": 47,
+      "open": 35,
+      "closed": 12,
+      "region_mapped": 47,
+      "missing_coordinates": 2,
+      "review_required": 0
+    },
+    {
+      "official_code": null,
+      "province": "울산광역시",
+      "api_rows": 143,
+      "open": 81,
+      "closed": 62,
+      "region_mapped": 143,
+      "missing_coordinates": 10,
+      "review_required": 1
+    },
+    {
+      "official_code": null,
+      "province": "인천광역시",
+      "api_rows": 539,
+      "open": 262,
+      "closed": 270,
+      "region_mapped": 523,
+      "missing_coordinates": 199,
+      "review_required": 19
+    },
+    {
+      "official_code": null,
+      "province": "전남광주통합특별시",
+      "api_rows": 652,
+      "open": 372,
+      "closed": 274,
+      "region_mapped": 652,
+      "missing_coordinates": 92,
+      "review_required": 15
+    },
+    {
+      "official_code": null,
+      "province": "전북특별자치도",
+      "api_rows": 434,
+      "open": 222,
+      "closed": 207,
+      "region_mapped": 434,
+      "missing_coordinates": 51,
+      "review_required": 4
+    },
+    {
+      "official_code": null,
+      "province": "제주특별자치도",
+      "api_rows": 218,
+      "open": 115,
+      "closed": 101,
+      "region_mapped": 218,
+      "missing_coordinates": 20,
+      "review_required": 3
+    },
+    {
+      "official_code": null,
+      "province": "충청남도",
+      "api_rows": 499,
+      "open": 298,
+      "closed": 199,
+      "region_mapped": 499,
+      "missing_coordinates": 48,
+      "review_required": 9
+    },
+    {
+      "official_code": null,
+      "province": "충청북도",
+      "api_rows": 310,
+      "open": 184,
+      "closed": 124,
+      "region_mapped": 310,
+      "missing_coordinates": 29,
+      "review_required": 4
+    }
+  ],
+  "gates": {
+    "complete_stable_response": true,
+    "region_mapping_at_least_99_percent": true,
+    "source_id_duplicate_critical_zero": true,
+    "orphan_region_zero": true,
+    "coordinate_error_reasonable": true,
+    "status_mapping_compatible": true,
+    "sixteen_current_provinces": true
+  },
+  "approved_for_sync": true
+}

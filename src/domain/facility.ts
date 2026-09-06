@@ -37,6 +37,7 @@ export interface FacilityView {
 }
 
 export interface FeeStatisticView {
+  categoryCode: string;
   itemCode: string;
   itemName: string;
   region: string;
@@ -51,6 +52,10 @@ export interface FeeStatisticView {
   sourceUrl?: string;
   sourceDate?: string;
   regionSlug?: string;
+  surveyRegionCode?: string;
+  surveyProvinceName?: string;
+  surveyCityName?: string;
+  regionMatchStatus?: "MATCHED" | "HISTORICAL_ONLY" | "NOT_APPLICABLE";
   animalType?: string;
   weightClass?: string;
 }

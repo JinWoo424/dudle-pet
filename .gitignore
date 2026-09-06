@@ -21,6 +21,8 @@ test-results/
 !.env.example
 *.pem
 *.key
+.certs/
+data/official/
 
 # local tooling
 .DS_Store

@@ -11,9 +11,16 @@ abstract class MoisAdapter implements FacilitySourceAdapter {
   if(!Number.isInteger(params.page)||params.page<1||!Number.isInteger(params.pageSize)||params.pageSize<1||params.pageSize>100)throw new Error("INVALID_PAGE");
   const url=new URL(c.endpoint);
   for(const[k,v]of Object.entries(c.request.fixed))url.searchParams.set(k,v);
-  url.searchParams.set(c.request.keyParameter,key);
+  // The portal supplies encoded and decoded keys; encode exactly once.
+  let decodedKey=key;
+  try{decodedKey=decodeURIComponent(key);}catch{}
+  url.searchParams.set(c.request.keyParameter,decodedKey);
   url.searchParams.set(c.request.pageParameter,String(params.page));
   url.searchParams.set(c.request.sizeParameter,String(params.pageSize));
+  for(const [name,value] of Object.entries(params.filters??{})){
+   if(!c.request.filters?.includes(name))throw new Error("API_FILTER_NOT_ALLOWED");
+   url.searchParams.set(name,value);
+  }
   for(let attempt=0;attempt<3;attempt++){
    try{
     const response=await fetch(url,{redirect:"error",cache:"no-store",signal:AbortSignal.timeout(15000),headers:{Accept:"application/json"}});

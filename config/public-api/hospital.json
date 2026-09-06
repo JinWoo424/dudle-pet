@@ -1,0 +1,70 @@
+{
+  "officialDocumentUrl": "https://www.data.go.kr/data/15045050/fileData.do",
+  "verifiedAt": "2026-09-05",
+  "endpoint": "https://apis.data.go.kr/1741000/animal_hospitals/info",
+  "request": {
+    "keyParameter": "serviceKey",
+    "pageParameter": "pageNo",
+    "sizeParameter": "numOfRows",
+    "fixed": {
+      "type": "json"
+    },
+    "filters": ["cond[ROAD_NM_ADDR::LIKE]"]
+  },
+  "response": {
+    "itemsPath": [
+      "response",
+      "body",
+      "items",
+      "item"
+    ],
+    "totalPath": [
+      "response",
+      "body",
+      "totalCount"
+    ],
+    "resultCodePath": [
+      "response",
+      "header",
+      "resultCode"
+    ],
+    "successCodes": [
+      "0"
+    ]
+  },
+  "mapping": {
+    "sampleSha256": "50be917188685f1b135995d5a3eb55428c9f83bb91dc60abbff8c5115f3e2d25",
+    "fields": {
+      "externalId": "MNG_NO",
+      "name": "BPLC_NM",
+      "phone": "TELNO",
+      "roadAddress": "ROAD_NM_ADDR",
+      "jibunAddress": "LOTNO_ADDR",
+      "postalCode": "ROAD_NM_ZIP",
+      "publicLocalCode": "OPN_ATMY_GRP_CD",
+      "publicStatusCode": "SALS_STTS_CD",
+      "publicStatusName": "SALS_STTS_NM",
+      "publicDetailStatusCode": "DTL_SALS_STTS_CD",
+      "publicDetailStatusName": "DTL_SALS_STTS_NM",
+      "licenseDate": "LCPMT_YMD",
+      "licenseCancelDate": "LCPMT_RTRCN_YMD",
+      "closedDate": "CLSBIZ_YMD",
+      "temporaryCloseStart": "TCBIZ_BGNG_YMD",
+      "temporaryCloseEnd": "TCBIZ_END_YMD",
+      "reopenDate": "ROBIZ_YMD",
+      "sourceUpdatedAt": "LAST_MDFCN_PNT",
+      "sourceX": "CRD_INFO_X",
+      "sourceY": "CRD_INFO_Y"
+    },
+    "statusField": "publicStatusCode",
+    "statuses": {
+      "01": "OPEN",
+      "02": "TEMP_CLOSED",
+      "03": "CLOSED",
+      "04": "SUSPENDED"
+    },
+    "sourceCrs": "EPSG:5174",
+    "coordinateOrder": "EASTING_NORTHING",
+    "sourceDateFormat": "YYYY-MM-DD HH:mm:ss_KST"
+  }
+}

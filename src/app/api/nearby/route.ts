@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { nearbyFacilities } from "@/data/repository";
+export const runtime="nodejs";
 const schema=z.object({latitude:z.number().min(32).max(40),longitude:z.number().min(123).max(133),radiusMeters:z.union([z.literal(1000),z.literal(3000),z.literal(5000)]),type:z.enum(["ANIMAL_HOSPITAL","ANIMAL_PHARMACY","PET_FUNERAL"]),feature:z.literal("24h").optional()});
 export async function POST(request:Request) {
  if(Number(request.headers.get("content-length")??0)>2048) return new Response("Request too large",{status:413});

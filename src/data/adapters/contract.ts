@@ -7,7 +7,7 @@ export const contractSchema=z.object({
  officialDocumentUrl:z.url().refine(s=>["data.go.kr","www.data.go.kr","mois.go.kr","www.mois.go.kr"].includes(new URL(s).hostname)),
  verifiedAt:z.iso.date(),
  endpoint:z.url().refine(s=>{const u=new URL(s);return u.protocol==="https:"&&u.hostname==="apis.data.go.kr"&&!u.username&&!u.password&&!u.search&&!u.hash;}),
- request:z.object({keyParameter:z.string().min(1),pageParameter:z.string().min(1),sizeParameter:z.string().min(1),fixed:z.record(z.string(),z.string())}),
+ request:z.object({keyParameter:z.string().min(1),pageParameter:z.string().min(1),sizeParameter:z.string().min(1),fixed:z.record(z.string(),z.string()),filters:z.array(z.string().min(1)).optional()}),
  response:z.object({itemsPath:path,totalPath:path,resultCodePath:path,successCodes:z.array(z.string()).min(1)}).optional(),
  mapping:z.object({
   sampleSha256:z.string().regex(/^[a-f0-9]{64}$/),

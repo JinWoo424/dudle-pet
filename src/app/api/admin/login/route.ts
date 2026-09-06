@@ -1,5 +1,6 @@
 import { adminConfigured, createAdminSession, verifyPassword } from "@/lib/admin-auth";
 import { limitedForm, persistentRateLimit, sameOrigin } from "@/lib/request-security";
+export const runtime="nodejs";
 export async function POST(request:Request){
  if(!sameOrigin(request))return new Response("Invalid origin",{status:403});
  if(!adminConfigured())return new Response("관리자 설정이 필요합니다.",{status:503});

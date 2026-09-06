@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getSql } from "@/db/connection";
 import { limitedForm, persistentRateLimit, sameOrigin } from "@/lib/request-security";
+export const runtime="nodejs";
 const schema=z.object({facilityId:z.string().uuid(),reportType:z.enum(["CLOSED","WRONG_PHONE","WRONG_ADDRESS","WRONG_HOURS","WRONG_24H","WRONG_SERVICE","OTHER"]),message:z.string().trim().min(10).max(1500),contactEmail:z.union([z.literal(""),z.email().max(254)]).optional()});
 export async function POST(request:Request){
  if(!sameOrigin(request))return new Response("Invalid origin",{status:403});

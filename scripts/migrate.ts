@@ -5,9 +5,13 @@ import postgres from "postgres";
 async function main() {
  const url=process.env.DIRECT_URL||process.env.DATABASE_URL;
  if(!url) throw new Error("DATABASE_NOT_CONFIGURED");
- const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,onnotice:()=>{}});
+ const caPath=process.env.SUPABASE_CA_CERT_PATH;
+ const inlineCa=process.env.SUPABASE_CA_CERT?.replace(/\\n/g,"\n").trim();
+ const ca=inlineCa||(caPath?await readFile(caPath,"utf8"):undefined);
+ const sql=postgres(url,{max:1,prepare:false,connect_timeout:10,ssl:{rejectUnauthorized:true,servername:new URL(url).hostname,...(ca?{ca}:{})},onnotice:()=>{}});
  try {
   await sql.begin(async tx=>{
+   await tx`SET LOCAL search_path = public, extensions`;
    await tx`SELECT pg_advisory_xact_lock(774203001)`;
    await tx`CREATE TABLE IF NOT EXISTS schema_migrations(name text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`;
    const applied=await tx`SELECT name,checksum FROM schema_migrations`;
