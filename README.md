@@ -49,6 +49,13 @@ SQL migration이 extension/view/trigger/RLS를 포함한 실행 기준입니다.
 공식 원본은 관리자 폼에서 덮어쓰지 않습니다. 변경은 감사 로그와 함께 저장됩니다.
 Kakao SDK는 시설 화면에서만 지연 로드합니다. 실제 키·도메인에서 지도 선택과 마커를 별도 검증해야 합니다.
 
+관리자 비밀번호와 세션/Cron 비밀값은 로컬 터미널에서 다음 명령으로 생성합니다. 평문 비밀번호는 입력 중 표시하거나 파일에 저장하지 않으며, 출력된 값은 Git이 아닌 Vercel encrypted environment variable에 직접 등록합니다.
+
+```powershell
+pnpm admin:hash-password
+pnpm generate:secrets
+```
+
 ## 검증
 
 ```text
@@ -66,7 +73,8 @@ E2E는 별도 .next-e2e 폴더와 3100번 포트에서 명시적 개발 Mock을 
 
 ## 배포
 
-push/deploy/DNS 변경은 별도 승인 단계에서만 수행합니다.
-main을 GitHub에 push한 뒤 Vercel에서 repository root를 Next.js로 import합니다.
+main을 GitHub에 push한 뒤 Vercel에서 repository root를 Next.js로 import합니다. Preview와 Production의 환경변수 scope는 분리하며 [SETUP_CHECKLIST.md](./SETUP_CHECKLIST.md)를 기준으로 등록합니다.
+Preview는 모든 응답에 noindex/nofollow 정책을 적용하고 robots.txt에서 전체 수집을 차단합니다. canonical과 sitemap URL은 항상 `https://pet.dudle.co.kr` 기준이며 Vercel Preview hostname은 sitemap에 기록하지 않습니다.
+자동 Sync/Cron은 Preview에서 실행되지 않고 Production의 정식 hostname에서만 허용됩니다. Preview DB 변경은 인증된 관리자 수동 작업 외에는 수행하지 않습니다.
 환경변수, DNS, HTTPS, 키 교체, 운영 연락처/개인정보 방침 확인은 SETUP_CHECKLIST.md를 따릅니다.
 광고는 ADSENSE_ENABLED=false로 유지하며 root domain ads.txt는 변경하지 않습니다.

@@ -4,10 +4,12 @@ import { publicAdapters } from "@/data/adapters/mois";
 import { syncSource } from "@/data/sync";
 import { refreshSeo } from "@/data/seo-maintenance";
 import { getSql } from "@/db/connection";
+import { isCanonicalProductionHost } from "@/lib/deployment";
 export const runtime="nodejs";
 export const maxDuration=60;
 function equal(a:string,b:string){const left=Buffer.from(a),right=Buffer.from(b);return left.length===right.length&&timingSafeEqual(left,right);}
 export async function GET(request:Request){
+ if(process.env.VERCEL_ENV!=="production"||!isCanonicalProductionHost(new URL(request.url).hostname))return new Response("Not found",{status:404});
  const expected=process.env.CRON_SECRET,supplied=request.headers.get("authorization")?.replace(/^Bearer\s+/i,"")??"";
  if(!expected||expected.length<32||!equal(supplied,expected))return new Response("Unauthorized",{status:401});
  const deadline=Date.now()+40000;const sources:Record<string,string>={};let failed=false;

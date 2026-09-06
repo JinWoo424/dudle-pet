@@ -8,7 +8,26 @@
 - [ ] Kakao JavaScript Key는 등록 도메인 제한: http://localhost:3000, https://pet.dudle.co.kr.
 - [ ] .env 및 모든 .env.*는 Git 제외(.env.example만 예외).
 
-## Vercel 환경변수
+## Vercel Preview 환경변수
+
+Vercel Project Settings → Environment Variables에서 아래 값을 **Preview scope에만** 등록한다. 값은 Git, 문서, 배포 로그에 복사하지 않는다.
+
+- [ ] NEXT_PUBLIC_SITE_URL=https://pet.dudle.co.kr (canonical 고정)
+- [ ] DATA_MODE=database
+- [ ] DATABASE_URL (Preview에서 읽기 위주로 사용할 pooled connection)
+- [ ] `SUPABASE_CA_CERT` (encrypted multiline PEM; `SUPABASE_CA_CERT_PATH` 사용 금지)
+- [ ] NEXT_PUBLIC_KAKAO_MAP_JS_KEY
+- [ ] ADMIN_EMAIL, ADMIN_PASSWORD_HASH, ADMIN_SESSION_SECRET (관리자 수동 QA가 필요할 때만)
+- [ ] ADSENSE_ENABLED=false
+- [ ] CRON_SECRET과 PUBLIC_DATA_SERVICE_KEY는 Preview에서 자동 Sync가 필요 없으므로 기본적으로 등록하지 않음.
+- [ ] DIRECT_URL, GOOGLE_SITE_VERIFICATION, NAVER_SITE_VERIFICATION, NEXT_PUBLIC_GA_ID, NEXT_PUBLIC_ADSENSE_CLIENT_ID, TEST_DATABASE_URL은 Preview에 등록하지 않음.
+- [ ] Preview build/deploy에서 migration, 전국 Sync, 진료비 import, merge/rollback 명령을 실행하지 않음.
+- [ ] Preview hostname의 `X-Robots-Tag: noindex, nofollow`, HTML robots meta, `/robots.txt` 전체 차단 확인.
+- [ ] `/sitemap.xml`과 canonical에 Preview hostname이 없고 `https://pet.dudle.co.kr`만 사용되는지 확인.
+
+## Vercel Production 환경변수
+
+다음 값은 **Production scope**에 등록한다. Preview와 동일한 비밀을 재사용해야 하는지 운영자가 별도로 판단한다.
 
 - [ ] NEXT_PUBLIC_SITE_URL=https://pet.dudle.co.kr
 - [ ] DATA_MODE=database
@@ -23,6 +42,8 @@
 - [ ] ADSENSE_ENABLED=false
 - [ ] NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-7368372468718077 (공개 ID, 활성화 뜻 아님)
 - [ ] TEST_DATABASE_URL은 폐기 가능한 별도 테스트 환경에만 설정.
+
+관리자 자격 증명은 `pnpm admin:hash-password`, 세션/Cron 비밀은 `pnpm generate:secrets`로 로컬에서 생성한다. 명령 출력은 Vercel encrypted environment variable에 직접 옮기고 저장소 파일에 쓰지 않는다.
 
 ## 실제 acceptance
 
@@ -48,7 +69,8 @@
 ## GitHub / Vercel / 도메인
 
 - [ ] 실제 GitHub dudle-pet remote 연결 및 main push.
-- [ ] Vercel import: Framework Next.js, Root repository root.
+- [ ] Vercel Add New → Project → `JinWoo424/dudle-pet` import: Framework Next.js, Root Directory repository root. Install/Build/Output 설정은 감지된 Next.js 기본값을 유지하고 임의 override하지 않음.
+- [ ] 첫 배포는 Preview로 확인하며 Production Deploy/Promote는 아직 실행하지 않음.
 - [ ] 배포 성공 후 pet.dudle.co.kr 추가.
 - [ ] Vercel이 실제 표시한 CNAME/A만 적용. DNS 추정 금지.
 - [ ] HTTPS 발급 및 HTTP→HTTPS 확인.
@@ -62,4 +84,4 @@
 - [ ] Supabase 공식 CA PEM은 Vercel encrypted `SUPABASE_CA_CERT`로 저장하고 줄바꿈이 보존되는지 Preview/Production에서 확인.
 - [ ] `rejectUnauthorized=true` 유지. `NODE_TLS_REJECT_UNAUTHORIZED=0`, `rejectUnauthorized=false`, SSL 비활성화 금지.
 - [ ] DB·Admin·Cron·동적 sitemap route가 Node.js runtime인지 배포 결과에서 확인.
-- [ ] Preview deployment에서 DB health, PostGIS, 관리자 로그인, cron 인증 실패/성공 경로를 점검한 후 Production 승격.
+- [ ] Preview deployment에서 DB health, PostGIS, 관리자 로그인, cron 404 차단을 점검한 후 별도 승인으로 Production 승격.

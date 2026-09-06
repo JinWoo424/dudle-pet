@@ -38,6 +38,8 @@
     "sync:approve": "tsx scripts/approve-import.ts",
     "seo:refresh": "tsx scripts/refresh-seo.ts",
     "scan:secrets": "node scripts/scan-secrets.mjs",
+    "admin:hash-password": "node scripts/hash-admin-password.mjs",
+    "generate:secrets": "node scripts/generate-secrets.mjs",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
