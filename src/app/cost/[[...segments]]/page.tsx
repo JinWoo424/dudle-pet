@@ -8,17 +8,18 @@ import { isMockMode, listFeeRegionLinks, listFeeStatistics, listFeeYears, resolv
 import { formatWon } from "@/lib/format";
 import { seoApproved } from "@/data/seo-repository";
 import { previewRobotsPolicy } from "@/lib/deployment";
+import { cache } from "react";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
 const animalLabels:Record<string,string>={DOG:"개",CAT:"고양이",ALL:"전체",NOT_APPLICABLE:"구분 없음"};
 const weightLabels:Record<string,string>={KG_5:"5kg",KG_10:"10kg",KG_20:"20kg",NOT_APPLICABLE:"구분 없음"};
-async function load(params:Props["params"],searchParams?:Props["searchParams"]){
- const segments=[...((await params).segments??[])];const item=itemCodes.has(segments.at(-1)??"")?segments.pop():undefined;
+const loadCost=cache(async(segmentsKey:string,queryKey:string)=>{
+ const segments=segmentsKey?segmentsKey.split("/"):[];const item=itemCodes.has(segments.at(-1)??"")?segments.pop():undefined;
  if(segments.length>3||segments.some(segment=>!/^[a-z0-9-]+$/.test(segment)))notFound();
  const slug=segments.join("/");const currentSlug=currentRegionSlugFromCost(slug);const region=slug?await resolveRegion(currentSlug):null;if(slug&&!region)notFound();
  const parent=region?.level==='CITY'?await resolveRegion(currentSlug.split('/')[0]):null;
- const query=searchParams?await searchParams:{};const animalType=animalTypes.has(query.animal??"")?query.animal:undefined;const weightClass=weightClasses.has(query.weight??"")?query.weight:undefined;
+ const query=Object.fromEntries(new URLSearchParams(queryKey));const animalType=animalTypes.has(query.animal??"")?query.animal:undefined;const weightClass=weightClasses.has(query.weight??"")?query.weight:undefined;
  if(query.region!==undefined||query.item!==undefined){
   const target=query.region??slug,chosen=query.item||undefined;
   if(target&&!/^[a-z0-9-]+(?:\/[a-z0-9-]+){0,2}$/.test(target))notFound();if(chosen&&!itemCodes.has(chosen))notFound();
@@ -31,6 +32,10 @@ async function load(params:Props["params"],searchParams?:Props["searchParams"]){
  const ownRows=filtered.filter(r=>currentSlug?r.regionSlug===currentSlug:r.regionLevel==='NATIONAL');
  const rows=ownRows.length?filtered:[];const regionLinks=await listFeeRegionLinks('',surveyYear);
  return {slug,currentSlug,region,parent,item,rows,ownRows,allRows,regionLinks,animalType,weightClass,years,surveyYear,query};
+});
+async function load(params:Props["params"],searchParams?:Props["searchParams"]){
+ const segments=(await params).segments??[];const query=searchParams?await searchParams:{};const entries=Object.entries(query).filter((entry):entry is [string,string]=>entry[1]!==undefined).sort(([a],[b])=>a.localeCompare(b));
+ return loadCost(segments.join("/"),new URLSearchParams(entries).toString());
 }
 export async function generateMetadata({params,searchParams}:Props):Promise<Metadata>{
  const {region,item,ownRows:rows,surveyYear,query}=await load(params,searchParams);const label=region?.shortName??region?.name??"전국";const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";

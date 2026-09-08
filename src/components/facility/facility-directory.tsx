@@ -11,6 +11,7 @@ import { facilityPath, typePaths } from "@/lib/facility-display";
 import type { FacilityKind } from "@/domain/facility";
 import { seoApproved, relatedSeoLinks } from "@/data/seo-repository";
 import { previewRobotsPolicy } from "@/lib/deployment";
+import { cache } from "react";
 
 export const directoryConfig = {
  ANIMAL_HOSPITAL:{ label:"동물병원", minimum:5 },
@@ -18,7 +19,7 @@ export const directoryConfig = {
  PET_FUNERAL:{ label:"반려동물 장례시설", minimum:2 },
 };
 export type DirectoryProps = { params:Promise<{segments?:string[]}>; searchParams:Promise<Record<string,string|string[]|undefined>> };
-export async function loadDirectory(type:FacilityKind, segments:string[], query:Record<string,string|string[]|undefined>={}) {
+async function loadDirectoryUncached(type:FacilityKind, segments:string[], query:Record<string,string|string[]|undefined>) {
  const route=parseFacilityRoute(segments); if(!route) notFound();
  if(route.feature && type!=="ANIMAL_HOSPITAL") notFound();
  const region=route.fullSlug ? await resolveRegion(route.fullSlug):null;
@@ -34,6 +35,13 @@ export async function loadDirectory(type:FacilityKind, segments:string[], query:
  }
  const result=await queryFacilities({type,regionSlug:route.fullSlug||undefined,feature:route.feature,page:Number(query.page)||1,sort:typeof query.sort==="string"?query.sort:undefined});
  return {route,region,facility:null,result};
+}
+const loadDirectoryCached=cache(async(type:FacilityKind,segmentsKey:string,page:string|undefined,sort:string|undefined)=>
+ loadDirectoryUncached(type,segmentsKey?segmentsKey.split("/"):[],{page,sort}));
+export function loadDirectory(type:FacilityKind,segments:string[],query:Record<string,string|string[]|undefined>={}){
+ const page=Array.isArray(query.page)?query.page.join(","):query.page;
+ const sort=typeof query.sort==="string"?query.sort:undefined;
+ return loadDirectoryCached(type,segments.join("/"),page,sort);
 }
 export async function directoryMetadata(type:FacilityKind,segments:string[],query:Record<string,string|string[]|undefined>={}):Promise<Metadata>{
  const data=await loadDirectory(type,segments,query); const {label,minimum}=directoryConfig[type];
