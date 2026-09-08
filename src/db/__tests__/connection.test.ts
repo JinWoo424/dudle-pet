@@ -28,7 +28,7 @@ describe("runtime database connection", () => {
     expect(postgresMock).toHaveBeenCalledTimes(1);
     expect(postgresMock).toHaveBeenCalledWith(
       expect.stringContaining(":6543/"),
-      expect.objectContaining({ max: 3, prepare: false }),
+      expect.objectContaining({ max: 4, prepare: false }),
     );
   });
 });
