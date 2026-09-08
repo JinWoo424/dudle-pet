@@ -14,10 +14,10 @@ export function Header() {
           <span className="brand-mark"><PawPrint size={20} aria-hidden="true" /></span>
           두들펫
         </Link>
-        <nav className="nav-links" aria-label="주요 메뉴">{links.map(([label,href])=><Link className={href==="/nearby"?"pill":undefined} href={href} key={href}>{label}</Link>)}</nav>
+        <nav className="nav-links" aria-label="주요 메뉴">{links.map(([label,href])=><Link className={href==="/nearby"?"pill":undefined} href={href} key={href} prefetch={false}>{label}</Link>)}</nav>
         <details className="mobile-nav">
           <summary aria-label="메뉴 열기"><Menu size={22} aria-hidden="true"/></summary>
-          <nav aria-label="모바일 주요 메뉴">{links.map(([label,href])=><Link href={href} key={href}>{label}</Link>)}</nav>
+          <nav aria-label="모바일 주요 메뉴">{links.map(([label,href])=><Link href={href} key={href} prefetch={false}>{label}</Link>)}</nav>
         </details>
       </div>
     </header>

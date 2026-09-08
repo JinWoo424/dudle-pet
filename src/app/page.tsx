@@ -48,7 +48,7 @@ export default function HomePage() {
           <div className="section-heading"><div><span className="eyebrow">바로 찾기</span><h2 id="category-heading">필요한 정보부터 확인하세요</h2></div></div>
           <div className="category-grid">
             {categories.map(({ href, label, detail, icon: Icon }) => (
-              <Link className="card category-card" href={href} key={href}>
+              <Link className="card category-card" href={href} key={href} prefetch={false}>
                 <span className="category-icon"><Icon size={22} aria-hidden="true" /></span>
                 <span><strong>{label}</strong><small>{detail}</small></span>
               </Link>
@@ -65,11 +65,11 @@ export default function HomePage() {
             <span className="eyebrow">많이 찾는 지역</span>
             <h2>지역별 동물병원</h2>
             <div className="chip-list">
-              <Link className="chip-link" href="/hospital/jeonnam-gwangju/yeosu">여수</Link>
-              <Link className="chip-link" href="/hospital/jeonnam-gwangju/suncheon">순천</Link>
-              <Link className="chip-link" href="/hospital/jeonnam-gwangju">전남광주</Link>
-              <Link className="chip-link" href="/hospital/seoul">서울</Link>
-              <Link className="chip-link" href="/hospital/busan">부산</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju/yeosu" prefetch={false}>여수</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju/suncheon" prefetch={false}>순천</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju" prefetch={false}>전남광주</Link>
+              <Link className="chip-link" href="/hospital/seoul" prefetch={false}>서울</Link>
+              <Link className="chip-link" href="/hospital/busan" prefetch={false}>부산</Link>
             </div>
           </div>
           <div className="card content-panel">

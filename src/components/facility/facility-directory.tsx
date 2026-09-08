@@ -67,11 +67,11 @@ export async function FacilityDirectory({type,segments,query={}}:{type:FacilityK
  return <div className="shell listing-page">
  <Breadcrumbs items={[{label:directoryConfig[type].label,href:`/${typePaths[type]}`},...(region?[{label:region.name}]:[])]}/><MockNotice/>
  <div className="listing-header"><div><h1>{name} {feature} {directoryConfig[type].label}</h1><p>{feature?"출처와 확인일이 있고 유효기간이 지나지 않은 검증정보만 표시합니다. 방문 전 전화로 진료 가능 여부를 확인하세요.":"공식 등록상 영업 시설입니다. 현재 시간의 실제 영업 여부는 시설에 직접 확인하세요."}</p><p className="quality-note">공식정보 출처: 공공데이터포털 / 행정안전부 · 최종 동기화: {synced??"확인된 데이터 없음"}</p></div><div className="count-box"><strong>{result!.total}</strong><span>공식 등록상 영업 시설</span></div></div>
- {children.length>0&&<div className="chip-list">{children.map(r=><Link className="chip-link" href={`/${typePaths[type]}/${r.fullSlug}`} key={r.id}>{r.name}</Link>)}</div>}
- <div className="filter-bar"><Link href={base}>전체</Link>{type==="ANIMAL_HOSPITAL"&&(["24h","night","exotic"] as const).map(f=><Link key={f} className={route.feature===f?"active":""} href={`${base}/${f}`}>{{"24h":"24시간",night:"야간",exotic:"특수동물"}[f]}</Link>)}<Link href={`?sort=${query.sort==="name"?"quality":"name"}`}>{query.sort==="name"?"정보 충실도순":"가나다순"}</Link></div>
+ {children.length>0&&<div className="chip-list">{children.map(r=><Link className="chip-link" href={`/${typePaths[type]}/${r.fullSlug}`} key={r.id} prefetch={false}>{r.name}</Link>)}</div>}
+ <div className="filter-bar"><Link href={base} prefetch={false}>전체</Link>{type==="ANIMAL_HOSPITAL"&&(["24h","night","exotic"] as const).map(f=><Link key={f} className={route.feature===f?"active":""} href={`${base}/${f}`} prefetch={false}>{{"24h":"24시간",night:"야간",exotic:"특수동물"}[f]}</Link>)}<Link href={`?sort=${query.sort==="name"?"quality":"name"}`} prefetch={false}>{query.sort==="name"?"정보 충실도순":"가나다순"}</Link></div>
  <FacilityResults facilities={result!.facilities} adSlot={adSlot}/>
  {!result!.total&&<p>현재 두들펫에서 확인된 {name} {feature} {directoryConfig[type].label}이 없습니다. <Link className="text-link" href={base}>전체 시설 보기</Link></p>}
- <nav className="chip-list" aria-label="페이지">{result!.page>1&&<Link className="chip-link" href={`?page=${result!.page-1}&sort=${query.sort==="name"?"name":"quality"}`}>이전</Link>}{result!.page*30<result!.total&&<Link className="chip-link" href={`?page=${result!.page+1}&sort=${query.sort==="name"?"name":"quality"}`}>다음</Link>}</nav>
- {related.length>0&&<nav className="chip-list" aria-label="지역 관련 정보">{related.map(link=><Link className="chip-link" href={link.path} key={link.path}>{name} {link.label}</Link>)}</nav>}
+ <nav className="chip-list" aria-label="페이지">{result!.page>1&&<Link className="chip-link" href={`?page=${result!.page-1}&sort=${query.sort==="name"?"name":"quality"}`} prefetch={false}>이전</Link>}{result!.page*30<result!.total&&<Link className="chip-link" href={`?page=${result!.page+1}&sort=${query.sort==="name"?"name":"quality"}`} prefetch={false}>다음</Link>}</nav>
+ {related.length>0&&<nav className="chip-list" aria-label="지역 관련 정보">{related.map(link=><Link className="chip-link" href={link.path} key={link.path} prefetch={false}>{name} {link.label}</Link>)}</nav>}
  </div>;
 }
