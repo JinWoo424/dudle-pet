@@ -1,5 +1,10 @@
 import Link from "next/link";
-import { PawPrint } from "lucide-react";
+import { Menu, PawPrint } from "lucide-react";
+
+const links = [
+  ["동물병원", "/hospital"], ["진료비", "/cost"], ["동물약국", "/pharmacy"],
+  ["장례시설", "/funeral"], ["가이드", "/guide"], ["내 주변", "/nearby"],
+];
 
 export function Header() {
   return (
@@ -9,14 +14,11 @@ export function Header() {
           <span className="brand-mark"><PawPrint size={20} aria-hidden="true" /></span>
           두들펫
         </Link>
-        <nav className="nav-links" aria-label="주요 메뉴">
-          <Link href="/hospital">동물병원</Link>
-          <Link href="/cost">진료비</Link>
-          <Link href="/pharmacy">동물약국</Link>
-          <Link href="/funeral">장례시설</Link>
-          <Link href="/guide">가이드</Link>
-          <Link className="pill" href="/nearby">내 주변</Link>
-        </nav>
+        <nav className="nav-links" aria-label="주요 메뉴">{links.map(([label,href])=><Link className={href==="/nearby"?"pill":undefined} href={href} key={href} prefetch={false}>{label}</Link>)}</nav>
+        <details className="mobile-nav">
+          <summary aria-label="메뉴 열기"><Menu size={22} aria-hidden="true"/></summary>
+          <nav aria-label="모바일 주요 메뉴">{links.map(([label,href])=><Link href={href} key={href} prefetch={false}>{label}</Link>)}</nav>
+        </details>
       </div>
     </header>
   );

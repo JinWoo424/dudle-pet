@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Clock3, Cross, HeartHandshake, MapPin, Pill, ReceiptText, ShieldCheck } from "lucide-react";
 import { HomeSearch } from "@/components/search/home-search";
 import type { Metadata } from "next";
+import { AdSlot } from "@/components/ads/ad-slot";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -47,7 +48,7 @@ export default function HomePage() {
           <div className="section-heading"><div><span className="eyebrow">바로 찾기</span><h2 id="category-heading">필요한 정보부터 확인하세요</h2></div></div>
           <div className="category-grid">
             {categories.map(({ href, label, detail, icon: Icon }) => (
-              <Link className="card category-card" href={href} key={href}>
+              <Link className="card category-card" href={href} key={href} prefetch={false}>
                 <span className="category-icon"><Icon size={22} aria-hidden="true" /></span>
                 <span><strong>{label}</strong><small>{detail}</small></span>
               </Link>
@@ -56,17 +57,19 @@ export default function HomePage() {
         </div>
       </section>
 
+      <AdSlot placement="HOME_CONTENT_1" pageType="HOME" monetization="FULL" />
+
       <section className="section" aria-label="인기 탐색">
         <div className="shell split-grid">
           <div className="card content-panel">
             <span className="eyebrow">많이 찾는 지역</span>
             <h2>지역별 동물병원</h2>
             <div className="chip-list">
-              <Link className="chip-link" href="/hospital/jeonnam-gwangju/yeosu">여수</Link>
-              <Link className="chip-link" href="/hospital/jeonnam-gwangju/suncheon">순천</Link>
-              <Link className="chip-link" href="/hospital/jeonnam-gwangju">전남광주</Link>
-              <Link className="chip-link" href="/hospital/seoul">서울</Link>
-              <Link className="chip-link" href="/hospital/busan">부산</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju/yeosu" prefetch={false}>여수</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju/suncheon" prefetch={false}>순천</Link>
+              <Link className="chip-link" href="/hospital/jeonnam-gwangju" prefetch={false}>전남광주</Link>
+              <Link className="chip-link" href="/hospital/seoul" prefetch={false}>서울</Link>
+              <Link className="chip-link" href="/hospital/busan" prefetch={false}>부산</Link>
             </div>
           </div>
           <div className="card content-panel">
@@ -85,6 +88,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <AdSlot placement="HOME_CONTENT_2" pageType="HOME" monetization="LIMITED" />
 
       <section className="trust-strip">
         <div className="shell trust-inner">
