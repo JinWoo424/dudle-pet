@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, Clock3, Cross, HeartHandshake, MapPin, Pill, ReceiptText, ShieldCheck } from "lucide-react";
 import { HomeSearch } from "@/components/search/home-search";
 import type { Metadata } from "next";
+import { AdSlot } from "@/components/ads/ad-slot";
 
 export const metadata: Metadata = { alternates: { canonical: "/" } };
 
@@ -56,6 +57,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <AdSlot placement="HOME_CONTENT_1" pageType="HOME" monetization="FULL" />
+
       <section className="section" aria-label="인기 탐색">
         <div className="shell split-grid">
           <div className="card content-panel">
@@ -85,6 +88,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <AdSlot placement="HOME_CONTENT_2" pageType="HOME" monetization="LIMITED" />
 
       <section className="trust-strip">
         <div className="shell trust-inner">

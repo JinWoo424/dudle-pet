@@ -9,6 +9,7 @@ import { formatWon } from "@/lib/format";
 import { seoApproved } from "@/data/seo-repository";
 import { previewRobotsPolicy } from "@/lib/deployment";
 import { cache } from "react";
+import { AdSlot } from "@/components/ads/ad-slot";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
@@ -56,7 +57,8 @@ export default async function CostPage({params,searchParams}:Props){
    <label>진료항목<select name="item" defaultValue={item??''}><option value="">전체 항목</option>{officialFeeItems.map(i=><option key={i.itemCode} value={i.itemCode}>{i.itemName}</option>)}</select></label>
    <label>동물<select name="animal" defaultValue={animalType??""}><option value="">모든 제공 조건</option>{Object.entries(animalLabels).filter(([v])=>allRows.some(r=>r.animalType===v)).map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label><label>체중<select name="weight" defaultValue={weightClass??""}><option value="">모든 제공 조건</option>{Object.entries(weightLabels).filter(([v])=>allRows.some(r=>r.weightClass===v&&(!animalType||r.animalType===animalType))).map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label><button className="secondary-button">조회</button></div></form>
   {focus&&<section className="card content-panel"><h2>{focus.itemName} · {animalLabels[focus.animalType??'']} · {weightLabels[focus.weightClass??'']}</h2><p>{focus.region} · {focus.surveyYear}년</p><div className="fee-price-grid">{priceCards.map(c=><div key={c.label}><span>{c.label}</span><strong>{formatWon(c.value)}</strong></div>)}</div></section>}
-  {focus&&region?.level==='CITY'&&<section className="card content-panel"><h2>조사 당시 지역</h2><p>현재 행정구역: {parent?.name} {region.name}</p><p>{focus.surveyYear}년 조사 당시: {focus.surveyProvinceName} {focus.surveyCityName}</p><p>원본 조사 지역을 보존합니다. 현재 광역단체 기준으로 과거 통계를 재합산하지 않습니다.</p></section>}
+  <AdSlot placement="COST_CONTENT_1" pageType={item?"COST_ITEM":"COST_REGION"} monetization="FULL"/>
+  {focus&&region?.level==='CITY'&&<section className="card content-panel historical-region-card"><span className="eyebrow">지역 기준 안내</span><h2>조사 당시 지역</h2><p>현재 행정구역: <strong>{parent?.name} {region.name}</strong></p><p>{focus.surveyYear}년 조사 당시: <strong>{focus.surveyProvinceName} {focus.surveyCityName}</strong></p><p className="quality-note">원본 조사 지역을 보존합니다. 현재 광역단체 기준으로 과거 통계를 재합산하지 않습니다.</p></section>}
   {!rows.length?<section className="card content-panel"><h2>이 지역·조건의 공식 진료비 통계가 없습니다.</h2><p>공개되지 않은 값을 0원으로 표시하거나 추정하지 않습니다.</p>
    {region?.level==="PROVINCE"&&regionLinks.some(r=>r.slug.startsWith(currentSlug+'/'))&&<><h3>{surveyYear}년 조사 지역별 통계</h3><p>{surveyYear}년 현재 통합 광역단체 기준 공식 통계 없음. 아래 조사 당시 개별 지역 통계를 확인하세요.</p><ul>{regionLinks.filter(r=>r.slug.startsWith(currentSlug+'/')).map(link=><li key={link.slug}><Link href={`/cost/${costRegionSlug(link.slug)}`}>{link.name} — {link.surveyYear}년 조사 당시 {link.surveyProvinceName}</Link></li>)}</ul></>}
    <Link className="secondary-button" href={currentSlug?`/hospital/${currentSlug}`:"/hospital"}>{region?`${label} 동물병원 보기`:"동물병원 찾기"}</Link></section>:<>

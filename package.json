@@ -55,6 +55,7 @@
     "verify:preview-safety": "node scripts/verify-preview-safety.mjs",
     "preflight:vercel": "node scripts/preflight-vercel.mjs",
     "qa:preview": "node scripts/qa-preview.mjs",
+    "qa:mobile-ui": "node scripts/qa-mobile-ui.mjs",
     "seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
