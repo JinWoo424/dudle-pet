@@ -8,7 +8,8 @@ describe("verified hospital sample (offline)", () => {
     const adapter = new MoisHospitalAdapter();
     const contract = await adapter.contract();
     const text = await readFile("docs/api-samples/hospital.json", "utf8");
-    expect(createHash("sha256").update(text).digest("hex")).toBe(contract.mapping?.sampleSha256);
+    const canonicalText = text.replace(/\r\n/g, "\n");
+    expect(createHash("sha256").update(canonicalText).digest("hex")).toBe(contract.mapping?.sampleSha256);
     const page = await adapter.parse(JSON.parse(text));
     expect(page.items).toHaveLength(5);
     for (const raw of page.items) {
