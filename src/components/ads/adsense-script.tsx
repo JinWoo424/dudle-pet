@@ -1,8 +1,9 @@
-import Script from "next/script";
+import { productionHostname } from "@/lib/deployment";
+import { isAdsenseRuntimeEnabled } from "./ad-config";
+import { AdsenseScriptClient } from "./adsense-script-client";
 
 export function AdSenseScript() {
-  if (process.env.VERCEL_ENV === "preview" || process.env.ADSENSE_ENABLED !== "true") return null;
   const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-  if (!client) return null;
-  return <Script async strategy="afterInteractive" crossOrigin="anonymous" src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`} />;
+  if (!isAdsenseRuntimeEnabled() || !client) return null;
+  return <AdsenseScriptClient clientId={client} productionHost={productionHostname()} />;
 }

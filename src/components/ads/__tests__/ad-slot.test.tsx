@@ -31,6 +31,28 @@ describe("AdSlot safety policy", () => {
     expect(AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME" })).toBeNull();
   });
 
+  it("connects only HOME_CONTENT_1 when production AdSense config is complete", () => {
+    process.env.VERCEL_ENV = "production";
+    process.env.ADSENSE_ENABLED = "true";
+    process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID = "test-client";
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_1 = "test-slot";
+
+    const homeOne = AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME", monetization: "FULL" });
+    expect(homeOne).not.toBeNull();
+    expect(homeOne?.props.slot).toBe("test-slot");
+    expect(AdSlot({ placement: "HOME_CONTENT_2", pageType: "HOME", monetization: "FULL" })).toBeNull();
+    expect(AdSlot({ placement: "HOSPITAL_LIST_1", pageType: "HOSPITAL_REGION", monetization: "FULL" })).toBeNull();
+  });
+
+  it("never renders a real unit in Preview even if AdSense is misconfigured on", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.ADSENSE_ENABLED = "true";
+    process.env.ADSENSE_LAYOUT_PREVIEW = "false";
+    process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID = "test-client";
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_1 = "test-slot";
+    expect(AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME", monetization: "FULL" })).toBeNull();
+  });
+
   it("keeps admin, search, and nearby pages ad-free", () => {
     process.env.VERCEL_ENV = "preview";
     process.env.ADSENSE_LAYOUT_PREVIEW = "true";
