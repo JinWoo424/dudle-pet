@@ -11,6 +11,7 @@ type AdsenseEnv = {
   ADSENSE_ENABLED?: string;
   NEXT_PUBLIC_ADSENSE_CLIENT_ID?: string;
   NEXT_PUBLIC_ADSENSE_SLOT_HOME_1?: string;
+  NEXT_PUBLIC_ADSENSE_SLOT_HOSPITAL_LIST_1?: string;
   VERCEL_ENV?: string;
 };
 
@@ -19,6 +20,7 @@ function currentAdsenseEnv(): AdsenseEnv {
     ADSENSE_ENABLED: process.env.ADSENSE_ENABLED,
     NEXT_PUBLIC_ADSENSE_CLIENT_ID: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID,
     NEXT_PUBLIC_ADSENSE_SLOT_HOME_1: process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_1,
+    NEXT_PUBLIC_ADSENSE_SLOT_HOSPITAL_LIST_1: process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOSPITAL_LIST_1,
     VERCEL_ENV: process.env.VERCEL_ENV,
   };
 }
@@ -32,6 +34,7 @@ export function isAdsenseRuntimeEnabled(env: AdsenseEnv = currentAdsenseEnv()) {
 }
 
 export function adsenseSlot(placement: AdPlacement, env: AdsenseEnv = currentAdsenseEnv()) {
-  if (placement !== "HOME_CONTENT_1") return undefined;
-  return env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_1 || undefined;
+  if (placement === "HOME_CONTENT_1") return env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_1 || undefined;
+  if (placement === "HOSPITAL_LIST_1") return env.NEXT_PUBLIC_ADSENSE_SLOT_HOSPITAL_LIST_1 || undefined;
+  return undefined;
 }
