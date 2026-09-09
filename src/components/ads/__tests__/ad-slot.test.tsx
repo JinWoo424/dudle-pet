@@ -37,6 +37,13 @@ describe("AdSlot safety policy", () => {
     expect(AdSlot({ placement: "COST_CONTENT_1", pageType: "COST_REGION", monetization: "OFF" })).toBeNull();
   });
 
+  it("previews only placements that are prepared for the current rollout", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.ADSENSE_LAYOUT_PREVIEW = "true";
+    expect(AdSlot({ placement: "HOME_CONTENT_2", pageType: "HOME", monetization: "FULL" })).toBeNull();
+    expect(AdSlot({ placement: "PHARMACY_LIST_1", pageType: "PHARMACY_REGION", monetization: "FULL" })).toBeNull();
+  });
+
   it("connects only approved placements when production AdSense config is complete", () => {
     process.env.VERCEL_ENV = "production";
     process.env.ADSENSE_ENABLED = "true";
