@@ -7,3 +7,19 @@ export function shouldInsertHospitalListAd(totalFacilities: number, visibleFacil
     visibleFacilities >= HOSPITAL_LIST_AD_AFTER_CARD
   );
 }
+
+export function hasFacilityDetailAdQuality(facility: {
+  businessStatus: string;
+  name: string;
+  roadAddress: string;
+  regionSlug?: string;
+  syncedAt?: string;
+}) {
+  return (
+    facility.businessStatus === "OPEN" &&
+    Boolean(facility.name.trim()) &&
+    Boolean(facility.roadAddress.trim()) &&
+    Boolean(facility.regionSlug) &&
+    Boolean(facility.syncedAt)
+  );
+}
