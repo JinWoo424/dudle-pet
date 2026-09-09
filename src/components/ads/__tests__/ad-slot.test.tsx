@@ -18,7 +18,7 @@ describe("AdSlot safety policy", () => {
     process.env.VERCEL_ENV = "preview";
     process.env.ADSENSE_ENABLED = "false";
     process.env.ADSENSE_LAYOUT_PREVIEW = "true";
-    const result = AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME" });
+    const result = AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME", monetization: "FULL" });
     expect(result).not.toBeNull();
     expect(result?.props.className).toContain("ad-slot-preview");
     expect(result?.props.children).not.toContain("adsbygoogle");
@@ -29,6 +29,12 @@ describe("AdSlot safety policy", () => {
     process.env.ADSENSE_ENABLED = "false";
     process.env.ADSENSE_LAYOUT_PREVIEW = "true";
     expect(AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME" })).toBeNull();
+  });
+
+  it("does not preview placements blocked by page monetization policy", () => {
+    process.env.VERCEL_ENV = "preview";
+    process.env.ADSENSE_LAYOUT_PREVIEW = "true";
+    expect(AdSlot({ placement: "COST_CONTENT_1", pageType: "COST_REGION", monetization: "OFF" })).toBeNull();
   });
 
   it("connects only approved placements when production AdSense config is complete", () => {
