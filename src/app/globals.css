@@ -292,7 +292,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .fee-price-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; }
 .fee-price-grid>div { display:grid; gap:.5rem; padding:1rem; background:#f4f8f5; border-radius:.75rem; }
 .fee-price-grid strong { font-size:1.35rem; overflow-wrap:anywhere; }
-@media(max-width:720px) {
+@media(max-width:768px) {
   .fee-price-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
   .fee-price-grid>div { min-height:6.25rem; align-content:space-between; padding:.9rem; }
   .fee-price-grid strong { font-size:clamp(1.25rem,6vw,1.55rem); }
