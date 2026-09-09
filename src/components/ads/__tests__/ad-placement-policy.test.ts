@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   HOSPITAL_LIST_AD_AFTER_CARD,
   HOSPITAL_LIST_AD_MINIMUM_FACILITIES,
+  PHARMACY_LIST_AD_AFTER_CARD,
+  PHARMACY_LIST_AD_MINIMUM_FACILITIES,
   hasFacilityDetailAdQuality,
   shouldInsertHospitalListAd,
+  shouldInsertPharmacyListAd,
 } from "../ad-placement-policy";
 
 describe("hospital list ad policy", () => {
@@ -16,6 +19,19 @@ describe("hospital list ad policy", () => {
   it("omits the ad for short or low-data lists", () => {
     expect(shouldInsertHospitalListAd(7, 7)).toBe(false);
     expect(shouldInsertHospitalListAd(30, 5)).toBe(false);
+  });
+});
+
+describe("pharmacy list ad policy", () => {
+  it("inserts after six cards only when at least eight pharmacies exist", () => {
+    expect(PHARMACY_LIST_AD_AFTER_CARD).toBe(6);
+    expect(PHARMACY_LIST_AD_MINIMUM_FACILITIES).toBe(8);
+    expect(shouldInsertPharmacyListAd(8, 6)).toBe(true);
+  });
+
+  it("omits the ad for short or low-data lists", () => {
+    expect(shouldInsertPharmacyListAd(7, 7)).toBe(false);
+    expect(shouldInsertPharmacyListAd(30, 5)).toBe(false);
   });
 });
 

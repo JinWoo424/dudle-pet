@@ -41,7 +41,7 @@ describe("AdSlot safety policy", () => {
     process.env.VERCEL_ENV = "preview";
     process.env.ADSENSE_LAYOUT_PREVIEW = "true";
     expect(AdSlot({ placement: "HOME_CONTENT_2", pageType: "HOME", monetization: "FULL" })).toBeNull();
-    expect(AdSlot({ placement: "PHARMACY_LIST_1", pageType: "PHARMACY_REGION", monetization: "FULL" })).toBeNull();
+    expect(AdSlot({ placement: "PHARMACY_LIST_1", pageType: "PHARMACY_REGION", monetization: "FULL" })).not.toBeNull();
   });
 
   it("connects only approved placements when production AdSense config is complete", () => {
@@ -50,6 +50,7 @@ describe("AdSlot safety policy", () => {
     process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID = "test-client";
     process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOME_1 = "test-slot";
     process.env.NEXT_PUBLIC_ADSENSE_SLOT_HOSPITAL_LIST_1 = "hospital-slot";
+    process.env.NEXT_PUBLIC_ADSENSE_SLOT_PHARMACY_LIST_1 = "pharmacy-slot";
 
     const homeOne = AdSlot({ placement: "HOME_CONTENT_1", pageType: "HOME", monetization: "FULL" });
     expect(homeOne).not.toBeNull();
@@ -57,7 +58,8 @@ describe("AdSlot safety policy", () => {
     expect(AdSlot({ placement: "HOME_CONTENT_2", pageType: "HOME", monetization: "FULL" })).toBeNull();
     const hospital = AdSlot({ placement: "HOSPITAL_LIST_1", pageType: "HOSPITAL_REGION", monetization: "FULL" });
     expect(hospital?.props.slot).toBe("hospital-slot");
-    expect(AdSlot({ placement: "PHARMACY_LIST_1", pageType: "PHARMACY_REGION", monetization: "FULL" })).toBeNull();
+    const pharmacy = AdSlot({ placement: "PHARMACY_LIST_1", pageType: "PHARMACY_REGION", monetization: "FULL" });
+    expect(pharmacy?.props.slot).toBe("pharmacy-slot");
   });
 
   it("never renders a real unit in Preview even if AdSense is misconfigured on", () => {
