@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AdsenseScriptClient } from "./adsense-script-client";
 
 type AdsenseQueue = { push(entry: Record<string, never>): number };
 
@@ -28,15 +29,18 @@ export function AdsenseUnit({ clientId, slot, productionHost }: { clientId: stri
   }, [productionHost]);
 
   return (
-    <div className="ad-slot ad-slot-active" aria-label="광고">
-      <ins
-        ref={unitRef}
-        className="adsbygoogle"
-        data-ad-client={clientId}
-        data-ad-slot={slot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
-    </div>
+    <>
+      <AdsenseScriptClient clientId={clientId} productionHost={productionHost} />
+      <div className="ad-slot ad-slot-active" aria-label="광고">
+        <ins
+          ref={unitRef}
+          className="adsbygoogle"
+          data-ad-client={clientId}
+          data-ad-slot={slot}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      </div>
+    </>
   );
 }

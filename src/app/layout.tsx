@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Header } from "@/components/site/header";
 import { Footer } from "@/components/site/footer";
 import { AnalyticsScript } from "@/components/analytics/analytics-script";
-import { AdSenseScript } from "@/components/ads/adsense-script";
 import { isPreviewDeployment } from "@/lib/deployment";
 import "./globals.css";
 
@@ -32,7 +31,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main id="main-content">{children}</main>
         <Footer />
         <AnalyticsScript />
-        <AdSenseScript />
       </body>
     </html>
   );
