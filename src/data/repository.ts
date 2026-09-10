@@ -26,8 +26,8 @@ export function mapFacility(row: Row): FacilityView {
  };
 }
 const databaseRegions=unstable_cache(async():Promise<RegionView[]>=>{
- const rows = await getSql()`SELECT r.id,r.parent_id,r.level,r.name,r.short_name,r.full_slug,coalesce(array_agg(a.alias_name) FILTER(WHERE a.alias_name IS NOT NULL),'{}') AS aliases,coalesce(array_agg(a.alias_slug) FILTER(WHERE a.alias_slug IS NOT NULL),'{}') AS alias_slugs FROM regions r LEFT JOIN region_aliases a ON a.region_id=r.id WHERE r.is_active GROUP BY r.id ORDER BY r.full_slug`;
- return rows.map(r => ({ id:r.id, parentId:r.parent_id ?? undefined, level:r.level, name:r.name, shortName:r.short_name, fullSlug:r.full_slug, aliases:r.aliases, aliasSlugs:r.alias_slugs }));
+ const rows = await getSql()`SELECT r.id,r.parent_id,r.level,r.name,r.short_name,r.full_slug,r.hospital_count,r.pharmacy_count,r.funeral_count,p.short_name AS parent_short_name,(SELECT count(*)::int FROM regions duplicate WHERE duplicate.is_active AND duplicate.short_name=r.short_name AND duplicate.level IN ('PROVINCE','CITY')) AS duplicate_short_count,coalesce(array_agg(a.alias_name) FILTER(WHERE a.alias_name IS NOT NULL),'{}') AS aliases,coalesce(array_agg(a.alias_slug) FILTER(WHERE a.alias_slug IS NOT NULL),'{}') AS alias_slugs FROM regions r LEFT JOIN regions p ON p.id=r.parent_id LEFT JOIN region_aliases a ON a.region_id=r.id WHERE r.is_active GROUP BY r.id,p.short_name ORDER BY r.full_slug`;
+ return rows.map(r => {const natural=r.level==="PROVINCE"?r.short_name:r.level==="CITY"&&!/[구군]$/.test(r.name)?r.short_name:r.name;const seoName=Number(r.duplicate_short_count)>1&&r.parent_short_name?(r.parent_short_name===natural?r.name:`${r.parent_short_name} ${natural}`):natural;return { id:r.id, parentId:r.parent_id ?? undefined, level:r.level, name:r.name, shortName:r.short_name, seoName, fullSlug:r.full_slug, aliases:r.aliases, aliasSlugs:r.alias_slugs, hospitalCount:Number(r.hospital_count??0), pharmacyCount:Number(r.pharmacy_count??0), funeralCount:Number(r.funeral_count??0) };});
 },["region-registry-v2"],{revalidate:3600,tags:["regions"]});
 export async function listRegions():Promise<RegionView[]>{return isMockMode()?developmentRegions:databaseRegions();}
 export async function resolveRegion(slug: string) { return (await listRegions()).find(r => r.fullSlug === slug || r.aliasSlugs?.includes(slug)) ?? null; }
@@ -40,7 +40,7 @@ export async function queryFacilities(query: FacilityQuery = {}) {
   rows = rows.filter(f => terms.every(t => [f.name,f.roadAddress,f.city].join(" ").includes(t)));
   if (query.feature) { const key = { "24h":"open24h",night:"nightService",exotic:"exoticService" }[query.feature] as "open24h"; rows = rows.filter(f => f.features[key] === "YES" && f.features.verificationStatus === "VALID"); }
   rows.sort((a,b) => a.name.localeCompare(b.name,"ko"));
-  return { facilities: rows.slice((page-1)*size,page*size), total: rows.length, page };
+  const visible=rows.slice((page-1)*size,page*size);return { facilities:visible,total:rows.length,page,stats:{total:rows.length,coordinateCount:rows.filter(f=>f.latitude!=null&&f.longitude!=null).length,phoneCount:rows.filter(f=>Boolean(f.phone)).length,addressCount:rows.filter(f=>Boolean(f.roadAddress)).length,averageQuality:100,sourceDate:rows.map(f=>f.sourceDate).filter(Boolean).sort().at(-1),syncedAt:rows.map(f=>f.syncedAt).filter(Boolean).sort().at(-1)} };
  }
  const sql = getSql(); const feature = query.feature ? featureKeys[query.feature] : null;
  const terms = (query.search ?? "").trim().split(/\s+/).filter(Boolean).slice(0,8);
@@ -51,7 +51,7 @@ export async function queryFacilities(query: FacilityQuery = {}) {
  AND (${query.regionSlug ?? null}::text IS NULL OR r.full_slug=${query.regionSlug ?? null} OR starts_with(r.full_slug, ${(query.regionSlug ?? "") + "/"}))
  AND NOT EXISTS (SELECT 1 FROM unnest(${terms}::text[]) term WHERE strpos(lower(concat_ws(' ', f.name,f.road_address,f.jibun_address,f.province,f.city,f.district,f.legal_dong)), lower(term))=0)
  AND (${feature}::text IS NULL OR EXISTS (SELECT 1 FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.field_name=${feature} AND v.field_value='YES' AND v.expires_at>now() AND v.verified_at<=now() AND (v.source_url IS NOT NULL OR v.evidence_note IS NOT NULL)))`;
- const [count] = await sql`SELECT count(*)::int AS total FROM facilities f LEFT JOIN regions r ON r.id=f.region_id WHERE ${where}`;
+ const [count] = await sql`SELECT count(*)::int AS total,count(*) FILTER(WHERE f.geo_status='VALID' AND f.location IS NOT NULL)::int AS coordinate_count,count(*) FILTER(WHERE f.phone_normalized IS NOT NULL)::int AS phone_count,count(*) FILTER(WHERE nullif(coalesce(f.road_address,f.jibun_address),'') IS NOT NULL)::int AS address_count,coalesce(avg(f.data_quality_score),0)::int AS average_quality,max(f.source_updated_at) AS source_date,max(f.last_synced_at) AS synced_at FROM facilities f LEFT JOIN regions r ON r.id=f.region_id WHERE ${where}`;
  const rows = await sql`SELECT f.*,r.full_slug,
   (SELECT jsonb_agg(jsonb_build_object('fieldName',v.field_name,'fieldValue',v.field_value,'sourceType',v.source_type,'sourceUrl',v.source_url,'evidenceNote',v.evidence_note,'verifiedAt',v.verified_at,'expiresAt',v.expires_at)) FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.field_name IN ('open_24h','night_service','exotic_service','cat_service','parking_available')) AS verification_evidence,
   (SELECT max(verified_at) FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.expires_at>now() AND v.verified_at<=now()) AS verified_at,
@@ -71,7 +71,8 @@ export async function queryFacilities(query: FacilityQuery = {}) {
  WHERE ${where}
  ORDER BY ${query.sort === "name" ? sql`f.name ASC` : sql`f.data_quality_score DESC,f.name ASC`}, f.id
  LIMIT ${size} OFFSET ${(page-1)*size}`;
- return { facilities: rows.map(mapFacility), total:Number(count.total), page };
+ const date=(value:unknown)=>value?new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Seoul"}).format(new Date(String(value))):undefined;
+ return { facilities:rows.map(mapFacility),total:Number(count.total),page,stats:{total:Number(count.total),coordinateCount:Number(count.coordinate_count),phoneCount:Number(count.phone_count),addressCount:Number(count.address_count),averageQuality:Number(count.average_quality),sourceDate:date(count.source_date),syncedAt:date(count.synced_at)} };
 }
 export async function listFacilities(type?: FacilityKind) { return (await queryFacilities({ type })).facilities; }
 export const getFacility=cache(async(id:string)=>(await queryFacilities({id})).facilities[0]??null);
