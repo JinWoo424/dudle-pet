@@ -46,6 +46,8 @@
     "sync:all": "tsx scripts/sync.ts all",
     "sync:approve": "tsx scripts/approve-import.ts",
     "seo:refresh": "tsx scripts/refresh-seo.ts",
+    "seo:audit": "tsx scripts/seo-audit.ts",
+    "qa:seo": "node scripts/qa-national-seo.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs",
     "admin:hash-password": "node scripts/hash-admin-password.mjs",
     "generate:secrets": "node scripts/generate-secrets.mjs",

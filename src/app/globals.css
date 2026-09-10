@@ -207,6 +207,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .historical-region-card h2 { margin: .25rem 0 .75rem; font-size: 1.2rem; }
 .historical-region-card p { margin: .35rem 0; }
 .historical-region-card .quality-note { margin-top: .75rem; }
+.regional-summary { margin-block: 1.25rem; }
+.regional-summary h2 { margin-top: 0; }
+.detail-region-link { margin: -.35rem 0 1rem; }
 
 @media (max-width: 900px) {
   .shell, .ad-slot { width: min(var(--content-max-width), calc(100% - (var(--container-tablet-padding) * 2))); }
