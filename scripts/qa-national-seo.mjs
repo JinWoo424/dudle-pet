@@ -1,7 +1,11 @@
+import { existsSync, readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import { parseEnv } from "node:util";
 
 const productionOrigin = "https://pet.dudle.co.kr";
 const targetOrigin = (process.env.SEO_QA_URL || productionOrigin).replace(/\/$/, "");
+const previewEnvironment = existsSync(".local-secrets/vercel-preview.env") ? parseEnv(readFileSync(".local-secrets/vercel-preview.env", "utf8")) : {};
+const protectionBypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || previewEnvironment.VERCEL_AUTOMATION_BYPASS_SECRET;
 const regions = [
   ["/hospital/seoul", "서울"], ["/hospital/busan", "부산"], ["/hospital/daegu", "대구"],
   ["/hospital/incheon", "인천"], ["/hospital/daejeon", "대전"], ["/hospital/ulsan", "울산"],
@@ -17,7 +21,7 @@ const regions = [
 ];
 
 const match = (html, patterns) => patterns.map((pattern) => html.match(pattern)?.[1]).find(Boolean)?.replaceAll("&amp;", "&").trim() || "";
-const get = (path, userAgent = "Mozilla/5.0 SEO QA") => fetch(`${targetOrigin}${path}`, { headers: { "user-agent": userAgent }, redirect: "follow", signal: AbortSignal.timeout(30000) });
+const get = (path, userAgent = "Mozilla/5.0 SEO QA") => fetch(`${targetOrigin}${path}`, { headers: { "user-agent": userAgent, ...(protectionBypassSecret ? { "x-vercel-protection-bypass": protectionBypassSecret, "x-vercel-set-bypass-cookie": "true" } : {}) }, redirect: "follow", signal: AbortSignal.timeout(30000) });
 const failures = [];
 const pages = [];
 
