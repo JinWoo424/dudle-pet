@@ -4,6 +4,7 @@ import { parseEnv } from "node:util";
 
 const productionOrigin = "https://pet.dudle.co.kr";
 const targetOrigin = (process.env.SEO_QA_URL || productionOrigin).replace(/\/$/, "");
+const isPreview = new URL(targetOrigin).hostname.endsWith(".vercel.app");
 const previewEnvironment = existsSync(".local-secrets/vercel-preview.env") ? parseEnv(readFileSync(".local-secrets/vercel-preview.env", "utf8")) : {};
 const protectionBypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET || previewEnvironment.VERCEL_AUTOMATION_BYPASS_SECRET;
 const regions = [
@@ -21,7 +22,7 @@ const regions = [
 ];
 
 const match = (html, patterns) => patterns.map((pattern) => html.match(pattern)?.[1]).find(Boolean)?.replaceAll("&amp;", "&").trim() || "";
-const get = (path, userAgent = "Mozilla/5.0 SEO QA") => fetch(`${targetOrigin}${path}`, { headers: { "user-agent": userAgent, ...(protectionBypassSecret ? { "x-vercel-protection-bypass": protectionBypassSecret, "x-vercel-set-bypass-cookie": "true" } : {}) }, redirect: "follow", signal: AbortSignal.timeout(30000) });
+const get = (path, userAgent = "Mozilla/5.0 SEO QA") => fetch(`${targetOrigin}${path}`, { headers: { "user-agent": userAgent, ...(protectionBypassSecret ? { "x-vercel-protection-bypass": protectionBypassSecret } : {}) }, redirect: "follow", signal: AbortSignal.timeout(30000) });
 const failures = [];
 const pages = [];
 
@@ -40,7 +41,7 @@ for (const [path, label] of regions) {
       description: description.includes(`${label} 동물병원`) && /\d+곳/.test(description) && /기준일/.test(description),
       h1: h1.startsWith(`${label} 동물병원`),
       canonical: canonical === `${productionOrigin}${path}`,
-      robots: robots.includes("index") && robots.includes("follow") && !robots.includes("noindex"),
+      robots: isPreview ? robots.includes("noindex") && robots.includes("nofollow") : robots.includes("index") && robots.includes("follow") && !robots.includes("noindex"),
       structuredData: (html.match(/application\/ld\+json/g) || []).length >= 2,
       summary: html.includes("공식 데이터 요약"),
       realData: !/개발용 가상 데이터|두들동물병원 [ABC]/.test(html),
@@ -56,7 +57,9 @@ for (const [path, label] of regions) {
 const robotsResponse = await get("/robots.txt", "Yeti/1.1");
 const robotsText = await robotsResponse.text();
 const naverAllowed = /User-agent:\s*Yeti[\s\S]*Allow:\s*\//i.test(robotsText) || /User-Agent:\s*\*[\s\S]*Allow:\s*\//i.test(robotsText);
-const robotsOk = robotsResponse.status === 200 && naverAllowed && /Sitemap:\s*https:\/\/pet\.dudle\.co\.kr\/sitemap\.xml/i.test(robotsText);
+const robotsOk = isPreview
+  ? robotsResponse.status === 200 && /Disallow:\s*\//i.test(robotsText) && !/Sitemap:/i.test(robotsText)
+  : robotsResponse.status === 200 && naverAllowed && /Sitemap:\s*https:\/\/pet\.dudle\.co\.kr\/sitemap\.xml/i.test(robotsText);
 if (!robotsOk) failures.push({ path: "/robots.txt", failed: ["production-crawl-policy"] });
 
 const sitemapResponse = await get("/sitemap.xml");
