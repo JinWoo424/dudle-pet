@@ -9,6 +9,9 @@ describe("regional SEO content",()=>{
   expect(regionKeywordName(region)).toBe("여수");
   expect(regionalPrimaryKeyword("ANIMAL_HOSPITAL",region)).toBe("여수 동물병원");
  });
+ it("keeps an official district suffix when it is the SEO name",()=>{
+  expect(regionKeywordName({...region,name:"강남구",shortName:"강남",seoName:"강남구"})).toBe("강남구");
+ });
  it("starts the title with the primary keyword and uses actual counts",()=>{
   expect(regionalTitle("ANIMAL_HOSPITAL",region,stats)).toBe("여수 동물병원 15곳 | 지도·전화·병원 정보");
  });

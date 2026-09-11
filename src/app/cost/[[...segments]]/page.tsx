@@ -10,6 +10,7 @@ import { seoApproved } from "@/data/seo-repository";
 import { previewRobotsPolicy } from "@/lib/deployment";
 import { cache } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { regionKeywordName } from "@/lib/regional-seo";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
@@ -39,7 +40,7 @@ async function load(params:Props["params"],searchParams?:Props["searchParams"]){
  return loadCost(segments.join("/"),new URLSearchParams(entries).toString());
 }
 export async function generateMetadata({params,searchParams}:Props):Promise<Metadata>{
- const {region,item,ownRows:rows,surveyYear,query}=await load(params,searchParams);const label=region?.shortName??region?.name??"전국";const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";
+ const {region,item,ownRows:rows,surveyYear,query}=await load(params,searchParams);const label=regionKeywordName(region);const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";
  const canonical="/cost"+((await params).segments?.length?"/"+(await params).segments!.join("/"):"");
  const itemCount=new Set(rows.map(row=>row.itemCode)).size;const sourceDate=rows.map(row=>row.sourceDate).filter(Boolean).sort().at(-1);
  return {title:item?`${label} 동물병원 ${itemName} 진료비 | ${surveyYear??"공식"} 통계`:`${label} 동물병원 진료비 | ${surveyYear??"공식"} 공식 통계`,description:`${label} 동물병원 진료비 ${itemCount}개 항목의 최저·중간·평균·최고 비용을 ${surveyYear??"공식"}년 조사 기준으로 확인하세요. 기준일 ${sourceDate??"미확인"}이며 개별 병원 가격과 다를 수 있습니다.`,alternates:{canonical},robots:previewRobotsPolicy()??{index:!isMockMode()&&!Object.keys(query).length&&rows.some(r=>[r.minimumPrice,r.medianPrice,r.averagePrice,r.maximumPrice].some(p=>p!==null))&&await seoApproved(canonical),follow:true}};
@@ -47,7 +48,7 @@ export async function generateMetadata({params,searchParams}:Props):Promise<Meta
 export const revalidate=21600;
 export const runtime="nodejs";
 export default async function CostPage({params,searchParams}:Props){
- const {slug,currentSlug,region,parent,item,rows,ownRows,allRows,regionLinks,animalType,weightClass,years,surveyYear,query}=await load(params,searchParams);const label=region?.shortName??region?.name??"전국";const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";
+ const {slug,currentSlug,region,parent,item,rows,ownRows,allRows,regionLinks,animalType,weightClass,years,surveyYear,query}=await load(params,searchParams);const label=regionKeywordName(region);const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";
  const focus=ownRows.find(r=>r.itemCode===(item??'initial-consultation')&&r.weightClass==='KG_5')??ownRows[0];
  const priceCards:{label:string;value:number|null}[]=focus?[{label:'중간비용',value:focus.medianPrice},{label:'평균비용',value:focus.averagePrice},{label:'최저비용',value:focus.minimumPrice},{label:'최고비용',value:focus.maximumPrice}]:[];
  const canonical="/cost"+((await params).segments?.length?"/"+(await params).segments!.join("/"):"");
