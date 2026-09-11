@@ -100,7 +100,8 @@ async function main(){
   await mkdir(resolve("docs/reports"),{recursive:true});
   const matrixHeaders=["category","province","city","district","canonical_url","primary_keyword","secondary_keyword_1","secondary_keyword_2","open_count","coordinate_count","data_quality","seo_status","current_title","proposed_title","current_h1","proposed_h1","priority"];
   await writeFile(resolve("docs/SEO_KEYWORD_MATRIX.csv"),csv(matrix,matrixHeaders),"utf8");
-  const priorities=matrix.filter(row=>row.priority==="P0").sort((a,b)=>b.open_count-a.open_count||a.canonical_url.localeCompare(b.canonical_url));
+  const crawlCategoryRank:Record<string,number>={HOSPITAL_REGION:0,PHARMACY_REGION:1,COST_REGION:2,FUNERAL_REGION:3};
+  const priorities=matrix.filter(row=>row.priority==="P0").sort((a,b)=>(crawlCategoryRank[a.category]??9)-(crawlCategoryRank[b.category]??9)||b.open_count-a.open_count||a.canonical_url.localeCompare(b.canonical_url));
   const crawl=priorities.map(row=>({URL:row.canonical_url,keyword:row.primary_keyword,priority:row.priority,reason:`공식 데이터 ${row.open_count}건 · ${row.data_quality}`,indexable:"YES",sitemap:"YES",lastmod:row.lastmod}));
   const crawlHeaders=["URL","keyword","priority","reason","indexable","sitemap","lastmod"];
   await writeFile(resolve("docs/NAVER_CRAWL_PRIORITY.csv"),csv(crawl,crawlHeaders),"utf8");
