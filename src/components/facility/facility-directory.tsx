@@ -17,6 +17,7 @@ import { AdSlot } from "@/components/ads/ad-slot";
 import { PHARMACY_LIST_AD_AFTER_CARD, shouldInsertHospitalListAd, shouldInsertPharmacyListAd } from "@/components/ads/ad-placement-policy";
 import type { PageType } from "@/lib/seo";
 import { regionKeywordName, regionalDescription, regionalPrimaryKeyword, regionalSummary, regionalTitle } from "@/lib/regional-seo";
+import {shareMetadata} from "@/lib/share-metadata";
 
 export const directoryConfig = {
  ANIMAL_HOSPITAL:{ label:"동물병원", minimum:5 },
@@ -55,7 +56,7 @@ export async function directoryMetadata(type:FacilityKind,segments:string[],quer
  const ready=data.facility?Boolean(data.facility.name&&data.facility.roadAddress&&data.facility.regionSlug&&data.facility.businessStatus!=="UNKNOWN"):(data.result?.total??0)>=(data.route.feature==="24h"?2:data.route.feature?3:minimum);
  const canonical=data.facility?facilityPath(data.facility)!:`/${typePaths[type]}${segments.length?"/"+segments.join("/"):""}`;
  const description=data.facility?`${data.facility.name}의 공식 등록상태, 주소${data.facility.phone?", 전화번호":""}, 위치와 데이터 기준일을 확인하세요.`:data.route.feature?`${region}에서 근거와 유효기간이 확인된 ${feature}${label} ${(data.result?.total??0)}곳을 확인하세요.`:regionalDescription(type,data.region,data.result!.stats);
- return {title,description,alternates:{canonical},robots:previewRobotsPolicy()??{index:!isMockMode()&&ready&&!Object.keys(query).length&&await seoApproved(canonical),follow:true}};
+ return {title,description,alternates:{canonical},openGraph:shareMetadata(title,description,canonical),robots:previewRobotsPolicy()??{index:!isMockMode()&&ready&&!Object.keys(query).length&&await seoApproved(canonical),follow:true}};
 }
 export async function FacilityDirectory({type,segments,query={}}:{type:FacilityKind;segments:string[];query?:Record<string,string|string[]|undefined>}){
  const {route,region,facility,result}=await loadDirectory(type,segments,query);

@@ -25,5 +25,6 @@ export function track(event: AnalyticsEvent, context:EventContext={}) {
  const gtag=(window as Window & {gtag?:(...args:unknown[])=>void}).gtag;
  const safe=safeEventContext({...pageContext(window.location.pathname),...context});
  // Never transmit search text, query strings, phone/email, coordinates or form content.
+ window.dispatchEvent(new CustomEvent('dudle-analytics',{detail:{event,parameters:safe}}));
  gtag?.('event',event,{...safe,page_location:window.location.origin+(safe.source_page??'/'),page_title:'Dudle Pet'});
 }

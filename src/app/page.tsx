@@ -4,8 +4,9 @@ import { ArrowRight, BadgeCheck, Clock3, Cross, HeartHandshake, MapPin, Pill, Re
 import { HomeSearch } from "@/components/search/home-search";
 import type { Metadata } from "next";
 import { AdSlot } from "@/components/ads/ad-slot";
+import {shareMetadata} from "@/lib/share-metadata";
 
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+export const metadata: Metadata = { alternates: { canonical: "/" },openGraph:shareMetadata("두들펫 — 우리 동네 반려동물 시설 정보","공식 등록 동물병원·동물약국·반려동물 장례시설과 지역 진료비 통계를 확인하세요.","/") };
 
 const categories = [
   { href: "/hospital", label: "동물병원", detail: "지역별 공식 등록 병원", icon: Cross },

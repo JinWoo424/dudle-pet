@@ -2,9 +2,11 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { track,pageContext,type Placement,type AnalyticsEvent } from "@/lib/analytics";
-export function AnalyticsEvents(){
+export function AnalyticsEvents({previewDiagnostics=false}:{previewDiagnostics?:boolean}){
  const path=usePathname();
  useEffect(()=>{
+  const diagnostic=(event:Event)=>{if(previewDiagnostics&&event instanceof CustomEvent)console.info('[Dudle Preview Analytics]',JSON.stringify(event.detail));};
+  window.addEventListener('dudle-analytics',diagnostic);
   const view=()=>{
    if(/^\/(hospital|pharmacy|funeral)\//.test(path)){
     track(/[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(path)?"facility_view":"region_view");
@@ -37,7 +39,7 @@ export function AnalyticsEvents(){
   const change=(event:Event)=>{if(event.target instanceof HTMLSelectElement)track('filter_change',{...pageContext(path),placement:placement(event.target)});};
   document.addEventListener('change',change);
   document.addEventListener("click",click);
-  return ()=>{window.removeEventListener("dudle-ga-ready",view);document.removeEventListener("click",click);document.removeEventListener('change',change);};
- },[path]);
+  return ()=>{window.removeEventListener('dudle-analytics',diagnostic);window.removeEventListener("dudle-ga-ready",view);document.removeEventListener("click",click);document.removeEventListener('change',change);};
+ },[path,previewDiagnostics]);
  return null;
 }
