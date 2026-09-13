@@ -6,11 +6,13 @@ import { MockNotice } from "@/components/data/mock-notice";
 import { costRegionSlug, currentRegionSlugFromCost, feeCategoryLabels, officialFeeItemByCode, officialFeeItems } from "@/data/fee-catalog";
 import { isMockMode, listFeeRegionLinks, listFeeStatistics, listFeeYears, resolveRegion } from "@/data/repository";
 import { formatWon } from "@/lib/format";
-import { seoApproved } from "@/data/seo-repository";
+import { seoApproved, regionalJourney } from "@/data/seo-repository";
+import { RegionalJourney } from "@/components/navigation/regional-journey";
 import { previewRobotsPolicy } from "@/lib/deployment";
 import { cache } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { regionKeywordName } from "@/lib/regional-seo";
+import { FeeComparison } from "@/components/fees/fee-comparison";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
@@ -53,6 +55,7 @@ export default async function CostPage({params,searchParams}:Props){
  const priceCards:{label:string;value:number|null}[]=focus?[{label:'중간비용',value:focus.medianPrice},{label:'평균비용',value:focus.averagePrice},{label:'최저비용',value:focus.minimumPrice},{label:'최고비용',value:focus.maximumPrice}]:[];
  const canonical="/cost"+((await params).segments?.length?"/"+(await params).segments!.join("/"):"");
  const costSeoReady=!isMockMode()&&!Object.keys(query).length&&ownRows.some(r=>[r.minimumPrice,r.medianPrice,r.averagePrice,r.maximumPrice].some(p=>p!==null))&&await seoApproved(canonical);
+ const journey=region?await regionalJourney(currentSlug,canonical):[];
  const publishedItemCount=new Set(ownRows.map(row=>row.itemCode)).size;const sourceDate=ownRows.map(row=>row.sourceDate).filter(Boolean).sort().at(-1);
  return <div className="shell listing-page"><Breadcrumbs items={[{label:"진료비",href:"/cost"},...(region?[{label:region.name}]:[]),...(item?[{label:itemName!}]:[])]}/><MockNotice/>
   <div className="listing-header"><div><span className="eyebrow">{surveyYear?`${surveyYear}년 `:''}공식 지역 진료비 통계</span><h1>{label} 동물병원 {item?`${itemName} 비용`:"진료비"}</h1><p>농림축산식품부 「동물병원 진료비용 현황 조사 및 공개」 자료만 표시합니다. 실제 개별 동물병원의 진료비와 다를 수 있습니다.</p></div></div>
@@ -63,6 +66,7 @@ export default async function CostPage({params,searchParams}:Props){
    <label>진료항목<select name="item" defaultValue={item??''}><option value="">전체 항목</option>{officialFeeItems.map(i=><option key={i.itemCode} value={i.itemCode}>{i.itemName}</option>)}</select></label>
    <label>동물<select name="animal" defaultValue={animalType??""}><option value="">모든 제공 조건</option>{Object.entries(animalLabels).filter(([v])=>allRows.some(r=>r.animalType===v)).map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label><label>체중<select name="weight" defaultValue={weightClass??""}><option value="">모든 제공 조건</option>{Object.entries(weightLabels).filter(([v])=>allRows.some(r=>r.weightClass===v&&(!animalType||r.animalType===animalType))).map(([value,text])=><option key={value} value={value}>{text}</option>)}</select></label><button className="secondary-button">조회</button></div></form>
   {focus&&<section className="card content-panel"><h2>{focus.itemName} · {animalLabels[focus.animalType??'']} · {weightLabels[focus.weightClass??'']}</h2><p>{focus.region} · {focus.surveyYear}년</p><div className="fee-price-grid">{priceCards.map(c=><div key={c.label}><span>{c.label}</span><strong>{formatWon(c.value)}</strong></div>)}</div></section>}
+  {item&&focus&&<FeeComparison rows={allRows} focus={focus}/>}
   <AdSlot placement="COST_CONTENT_1" pageType={item?"COST_ITEM":"COST_REGION"} monetization={costSeoReady?"FULL":"OFF"}/>
   {focus&&region?.level==='CITY'&&<section className="card content-panel historical-region-card"><span className="eyebrow">지역 기준 안내</span><h2>조사 당시 지역</h2><p>현재 행정구역: <strong>{parent?.name} {region.name}</strong></p><p>{focus.surveyYear}년 조사 당시: <strong>{focus.surveyProvinceName} {focus.surveyCityName}</strong></p><p className="quality-note">원본 조사 지역을 보존합니다. 현재 광역단체 기준으로 과거 통계를 재합산하지 않습니다.</p></section>}
   {!rows.length?<section className="card content-panel"><h2>이 지역·조건의 공식 진료비 통계가 없습니다.</h2><p>공개되지 않은 값을 0원으로 표시하거나 추정하지 않습니다.</p>
@@ -71,5 +75,6 @@ export default async function CostPage({params,searchParams}:Props){
    {!item&&<section className="card content-panel"><h2>공개 항목</h2><div className="chip-list">{officialFeeItems.filter(catalog=>rows.some(row=>row.itemCode===catalog.itemCode)).map(catalog=><Link className="chip-link" href={`/cost/${slug?`${slug}/`:""}${catalog.itemCode}`} key={catalog.itemCode} prefetch={false}>{catalog.itemName}</Link>)}</div></section>}
    <div className="card content-panel cost-table-wrap" tabIndex={0} aria-label="진료비 통계 표, 가로로 스크롤 가능"><table className="cost-table"><thead><tr><th>항목 / 조사 당시 지역</th><th>분류·조건</th><th>최저</th><th>중간값</th><th>평균</th><th>최고</th><th>출처 / 표본</th></tr></thead><tbody>{rows.map((stat,index)=><tr key={`${stat.regionLevel}-${stat.surveyRegionCode}-${stat.itemCode}-${stat.animalType}-${stat.weightClass}-${index}`}><td>{stat.itemName}<br/><strong>{stat.regionLevel==="NATIONAL"?"전국":`${stat.surveyYear}년 조사 당시 ${[stat.surveyProvinceName,stat.surveyCityName].filter(Boolean).join(" ")}`}</strong></td><td>{feeCategoryLabels[stat.categoryCode]??stat.categoryCode}<br/>{animalLabels[stat.animalType??""]??stat.animalType} · {weightLabels[stat.weightClass??""]??stat.weightClass}</td><td>{formatWon(stat.minimumPrice)}</td><td><strong>{formatWon(stat.medianPrice)}</strong></td><td>{formatWon(stat.averagePrice)}</td><td>{formatWon(stat.maximumPrice)}</td><td>{stat.sourceUrl&&/^https:\/\//.test(stat.sourceUrl)?<a href={stat.sourceUrl} target="_blank" rel="noreferrer">{stat.sourceName}</a>:stat.sourceName}<br/>표본 {stat.sampleCount??"미공개"} · {stat.sourceDate??"기준일 미확인"}</td></tr>)}</tbody></table></div>
    <p className="quality-note">‘자료 없음’은 0원이 아닙니다. 조사 당시 지역·동물·체중 조건이 다른 통계를 직접 합산하거나 현재 광역단체 통계로 바꾸지 않습니다.</p><p>데이터 출처: 농림축산식품부 · 조사년도 {surveyYear}년 · 공개 기준일 {focus?.sourceDate??rows[0]?.sourceDate??'미확인'} · 수집일 {focus?.collectedAt?new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date(focus.collectedAt)):'미확인'}</p><Link className="primary-button" href={currentSlug?`/hospital/${currentSlug}`:"/hospital"}>{region?`${label} 동물병원 보기`:"동물병원 찾기"}</Link></>}
+ <RegionalJourney links={journey}/>
  </div>;
 }

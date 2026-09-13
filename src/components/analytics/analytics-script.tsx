@@ -1,9 +1,10 @@
 import Script from "next/script";
 import { AnalyticsEvents } from "./analytics-events";
+import {isPreviewDeployment} from "@/lib/deployment";
 
 export function AnalyticsScript() {
   const id = process.env.NEXT_PUBLIC_GA_ID;
-  if (!id || !/^G-[A-Z0-9]+$/.test(id)) return null;
+  if (isPreviewDeployment() || !id || !/^G-[A-Z0-9]+$/.test(id)) return null;
   return (
     <>
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${id}`} strategy="afterInteractive" />

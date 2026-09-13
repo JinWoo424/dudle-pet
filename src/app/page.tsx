@@ -9,7 +9,7 @@ export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 const categories = [
   { href: "/hospital", label: "동물병원", detail: "지역별 공식 등록 병원", icon: Cross },
-  { href: "/hospital/jeonnam/yeosu/24h", label: "24시·야간", detail: "검증된 운영 정보", icon: Clock3 },
+  { href: "/guide/24-hour-hospital-checklist", label: "24시·야간", detail: "방문 전 확인할 운영 정보", icon: Clock3 },
   { href: "/cost", label: "진료비", detail: "지역별 공식 가격 통계", icon: ReceiptText },
   { href: "/pharmacy", label: "동물약국", detail: "주변 등록 약국", icon: Pill },
   { href: "/funeral", label: "반려동물 장례", detail: "합법 등록 시설", icon: HeartHandshake },
@@ -74,13 +74,13 @@ export default function HomePage() {
       <section className="section" aria-label="인기 탐색">
         <div className="shell split-grid">
           <div className="card content-panel">
-            <span className="eyebrow">많이 찾는 지역</span>
+            <span className="eyebrow">주요 지역 바로가기</span>
             <h2>지역별 동물병원</h2>
             <p>공식 등록상 영업 시설이 충분한 주요 지역을 바로 확인하세요.</p>
             <div className="chip-list">{majorHospitalRegions.map(([label,href])=><Link className="chip-link" href={href} key={href} prefetch={false}>{label}</Link>)}</div>
           </div>
           <div className="card content-panel">
-            <span className="eyebrow">많이 확인하는 진료비</span>
+            <span className="eyebrow">진료비와 약국 탐색</span>
             <h2>항목별 지역 통계</h2>
             <p>검증된 공식 파일이 등록된 항목만 공개합니다. 자료가 없는 항목에 가상 가격을 표시하지 않습니다.</p><div className="chip-list"><Link className="chip-link" href="/cost">공식 진료비 데이터 상태 확인</Link><Link className="chip-link" href="/cost/seoul">서울 동물병원 진료비</Link><Link className="chip-link" href="/cost/busan">부산 동물병원 진료비</Link><Link className="chip-link" href="/pharmacy/seoul">서울 동물약국</Link><Link className="chip-link" href="/pharmacy/busan">부산 동물약국</Link></div>
           </div>

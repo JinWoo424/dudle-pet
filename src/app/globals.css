@@ -300,6 +300,15 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .fee-price-grid>div { min-height:6.25rem; align-content:space-between; padding:.9rem; }
   .fee-price-grid strong { font-size:clamp(1.25rem,6vw,1.55rem); }
 }
+.regional-journey { margin-block:1.5rem; }
+.regional-journey-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; }
+.regional-journey-link { display:flex; flex-direction:column; justify-content:center; gap:.35rem; min-height:5rem; padding:1rem; border:1px solid #dce7eb; border-radius:.8rem; overflow-wrap:anywhere; }
+.regional-journey-link small { color:#52636b; }
+.regional-journey-link:hover { background:#f1f8fa; }
+.regional-journey-link:focus-visible { outline:3px solid #167d98; outline-offset:3px; }
+@media(min-width:1000px) { .regional-journey-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } .detail-main .regional-journey-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.fee-comparison-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr)); gap:1rem; margin-top:1rem; }
+.fee-comparison-grid article { min-width:0; overflow-wrap:anywhere; }
 @media(max-width:350px) {
   :root { --container-mobile-padding: .875rem; }
   .category-grid { gap: .6rem; }

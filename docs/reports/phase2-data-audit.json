@@ -1,0 +1,70 @@
+{
+  "at": "2026-09-13T02:22:19.750Z",
+  "samples": [
+    {
+      "survey_year": 2025,
+      "rows": 6413,
+      "sample_unpublished": 6413,
+      "sample_below_two": 0,
+      "sample_comparable": 0
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "medical_fee_statistics",
+      "indexname": "medical_fee_statistics_pkey",
+      "indexdef": "CREATE UNIQUE INDEX medical_fee_statistics_pkey ON public.medical_fee_statistics USING btree (id)"
+    },
+    {
+      "tablename": "medical_fee_statistics",
+      "indexname": "medical_fee_statistics_survey_year_region_level_region_id_i_key",
+      "indexdef": "CREATE UNIQUE INDEX medical_fee_statistics_survey_year_region_level_region_id_i_key ON public.medical_fee_statistics USING btree (survey_year, region_level, region_id, item_code, animal_type, weight_class)"
+    },
+    {
+      "tablename": "medical_fee_statistics",
+      "indexname": "fee_stats_batch_dimension_uq",
+      "indexdef": "CREATE UNIQUE INDEX fee_stats_batch_dimension_uq ON public.medical_fee_statistics USING btree (import_batch_id, region_level, COALESCE(survey_region_code, ''::text), COALESCE(survey_province_name, ''::text), COALESCE(survey_city_name, ''::text), item_code, animal_type, weight_class)"
+    },
+    {
+      "tablename": "medical_fee_statistics",
+      "indexname": "medical_fee_current_region_idx",
+      "indexdef": "CREATE INDEX medical_fee_current_region_idx ON public.medical_fee_statistics USING btree (current_region_id, item_code, survey_year)"
+    },
+    {
+      "tablename": "regions",
+      "indexname": "regions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX regions_pkey ON public.regions USING btree (id)"
+    },
+    {
+      "tablename": "regions",
+      "indexname": "regions_full_slug_key",
+      "indexdef": "CREATE UNIQUE INDEX regions_full_slug_key ON public.regions USING btree (full_slug)"
+    },
+    {
+      "tablename": "regions",
+      "indexname": "regions_parent_idx",
+      "indexdef": "CREATE INDEX regions_parent_idx ON public.regions USING btree (parent_id)"
+    },
+    {
+      "tablename": "regions",
+      "indexname": "regions_official_code_uq",
+      "indexdef": "CREATE UNIQUE INDEX regions_official_code_uq ON public.regions USING btree (official_code)"
+    },
+    {
+      "tablename": "seo_pages",
+      "indexname": "seo_pages_pkey",
+      "indexdef": "CREATE UNIQUE INDEX seo_pages_pkey ON public.seo_pages USING btree (id)"
+    },
+    {
+      "tablename": "seo_pages",
+      "indexname": "seo_pages_canonical_url_key",
+      "indexdef": "CREATE UNIQUE INDEX seo_pages_canonical_url_key ON public.seo_pages USING btree (canonical_url)"
+    },
+    {
+      "tablename": "seo_pages",
+      "indexname": "seo_status_canonical_idx",
+      "indexdef": "CREATE INDEX seo_status_canonical_idx ON public.seo_pages USING btree (seo_status, canonical_url)"
+    }
+  ],
+  "approvedUrls": 23609
+}

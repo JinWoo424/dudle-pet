@@ -7,11 +7,13 @@ import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { MockNotice } from "@/components/data/mock-notice";
 import { FacilityCard } from "./facility-card";
 import { formatWon } from "@/lib/format";
-import { costRegionSlug } from "@/data/fee-catalog";
 import { directionsUrl, facilityPath, safeJson, statusLabels } from "@/lib/facility-display";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { hasFacilityDetailAdQuality } from "@/components/ads/ad-placement-policy";
-import { seoApproved } from "@/data/seo-repository";
+import { seoApproved, regionalJourney } from "@/data/seo-repository";
+import { RegionalJourney } from "@/components/navigation/regional-journey";
+const feeAnimalLabels:Record<string,string>={DOG:"개",CAT:"고양이",ALL:"전체",NOT_APPLICABLE:"구분 없음"};
+const feeWeightLabels:Record<string,string>={KG_5:"5kg",KG_10:"10kg",KG_20:"20kg",NOT_APPLICABLE:"구분 없음"};
 export async function FacilityDetail({facility,typeLabel="동물병원",typePath="hospital"}:{facility:FacilityView;typeLabel?:string;typePath?:string}) {
  const hasCoordinates=facility.latitude!=null&&facility.longitude!=null;
  let pharmacyRadius=3000;
@@ -25,6 +27,8 @@ export async function FacilityDetail({facility,typeLabel="동물병원",typePath
  const fee=fees.find(f=>f.regionSlug===facility.regionSlug && f.regionLevel==="CITY");
  const region=[facility.province,facility.city,facility.district].filter(Boolean).join(" ");
  const path=facilityPath(facility);
+ const journey=facility.regionSlug?await regionalJourney(facility.regionSlug,path??""):[];
+ const costLink=journey.find(link=>link.pageType==="COST_REGION");
  const detailAdsAllowed=!isMockMode()&&path!==null&&hasFacilityDetailAdQuality(facility)&&await seoApproved(path);
  const structured={"@context":"https://schema.org","@type":"LocalBusiness",name:facility.name,address:facility.roadAddress,...(facility.phone?{telephone:facility.phone}:{}),...(path?{url:new URL(path,process.env.NEXT_PUBLIC_SITE_URL||"https://pet.dudle.co.kr").href}:{}),...(hasCoordinates?{geo:{"@type":"GeoCoordinates",latitude:facility.latitude,longitude:facility.longitude}}:{})};
  return <div className="shell detail-page">
@@ -39,7 +43,8 @@ export async function FacilityDetail({facility,typeLabel="동물병원",typePath
  {Boolean(facility.verifications?.length)&&<section className="card detail-section"><h2>확인 근거</h2><ul>{facility.verifications!.map(v=><li key={v.fieldName}><strong>{{open_24h:"24시간",night_service:"야간",exotic_service:"특수동물",cat_service:"고양이",parking_available:"주차"}[v.fieldName]??v.fieldName}: {v.fieldValue}</strong><p>{v.evidenceNote} · {v.sourceType}</p><p>확인일 {new Intl.DateTimeFormat("ko-KR",{timeZone:"Asia/Seoul"}).format(new Date(v.verifiedAt))} · 만료일 {new Intl.DateTimeFormat("ko-KR",{timeZone:"Asia/Seoul"}).format(new Date(v.expiresAt))}</p>{v.sourceUrl&&/^https?:\/\//.test(v.sourceUrl)&&<a href={v.sourceUrl} target="_blank" rel="noreferrer">확인 출처 보기</a>}</li>)}</ul></section>}
  <section className="card detail-section"><h2>지도</h2><KakaoMap facilities={[facility]}/></section>
  <AdSlot placement="FACILITY_DETAIL_1" pageType="FACILITY_DETAIL" monetization={detailAdsAllowed?"LIMITED":"OFF"}/>
- {facility.type==="ANIMAL_HOSPITAL"&&<section className="card detail-section"><h2>{region} X-ray 진료비</h2>{fee?<><strong>{formatWon(fee.medianPrice)}</strong><p>{fee.sourceName} · {fee.surveyYear}년</p></>:<p className="muted">이 지역의 공식 진료비 통계는 아직 등록되지 않았습니다.</p>}<p className="quality-note">지역 통계이며 이 병원의 실제 가격이 아닙니다.</p>{facility.regionSlug&&<Link href={`/cost/${costRegionSlug(facility.regionSlug)}/xray`}>지역 진료비 참고</Link>}</section>}
+ {facility.type==="ANIMAL_HOSPITAL"&&<section className="card detail-section"><h2>{region} X-ray 진료비</h2>{fee?<><strong>{formatWon(fee.medianPrice)}</strong><p>{fee.sourceName} · {fee.surveyYear}년 · {feeWeightLabels[fee.weightClass??""]??"체중 미확인"} · {feeAnimalLabels[fee.animalType??""]??"동물 구분 미확인"}</p></>:<p className="muted">이 지역의 공식 진료비 통계는 아직 등록되지 않았습니다.</p>}<p className="quality-note">지역 통계이며 이 병원의 실제 가격이 아닙니다.</p>{costLink&&<Link href={costLink.path}>{costLink.regionName} 진료비 통계 확인{costLink.scope==="parent"?" (상위 지역)":""}</Link>}</section>}
+ <RegionalJourney links={journey}/>
  <section className="card detail-section"><h2>정보수정 요청</h2><p className="muted">전화번호, 주소, 운영정보가 다르면 알려주세요.</p><Link className="secondary-button" href={`/report?facility=${facility.id}`}>정보수정 요청</Link></section>
  </div><aside className="detail-aside">{(["ANIMAL_PHARMACY","ANIMAL_HOSPITAL","PET_FUNERAL"] as const).map((kind,i)=><section key={kind}><h2>{kind==="ANIMAL_PHARMACY"?`주변 동물약국 (직선거리 ${pharmacyRadius/1000}km 이내)`:["","가까운 다른 병원","주변 장례시설"][i]}</h2>{around.filter(f=>f.type===kind).slice(0,2).map(f=><FacilityCard key={f.id} facility={f} compact/>)}{!around.some(f=>f.type===kind)&&<p className="muted">{hasCoordinates?`직선거리 ${kind==="ANIMAL_PHARMACY"?pharmacyRadius/1000:10}km 내 확인된 시설이 없습니다.`:"기준 좌표가 없어 거리를 계산할 수 없습니다."}</p>}</section>)}</aside></div></div>;
 }

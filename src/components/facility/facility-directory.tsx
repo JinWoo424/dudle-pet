@@ -9,7 +9,8 @@ import { getFacility, queryFacilities, resolveRegion, listRegions, isMockMode } 
 import { parseFacilityRoute } from "@/lib/regions";
 import { facilityPath, safeJson, typePaths } from "@/lib/facility-display";
 import type { FacilityKind } from "@/domain/facility";
-import { seoApproved, relatedSeoLinks } from "@/data/seo-repository";
+import { seoApproved, regionalJourney } from "@/data/seo-repository";
+import { RegionalJourney } from "@/components/navigation/regional-journey";
 import { previewRobotsPolicy } from "@/lib/deployment";
 import { cache } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
@@ -64,8 +65,9 @@ export async function FacilityDirectory({type,segments,query={}}:{type:FacilityK
  const countKey=type==="ANIMAL_HOSPITAL"?"hospitalCount":type==="ANIMAL_PHARMACY"?"pharmacyCount":"funeralCount";
  const children=(await listRegions()).filter(r=>(region?r.parentId===region.id:!r.parentId)&&(r[countKey]??0)>=directoryConfig[type].minimum);
  const synced=result!.stats.syncedAt;
- const related=region?await relatedSeoLinks(region.fullSlug):[];
- const regionalCostLink=related.find(link=>link.path.startsWith("/cost/"));
+ const currentPath=base+(route.feature?`/${route.feature}`:"");
+ const related=region?await regionalJourney(region.fullSlug,currentPath):[];
+ const regionalCostLink=related.find(link=>link.pageType==="COST_REGION");
  const pageType:PageType=type==="ANIMAL_HOSPITAL"?(route.feature==="24h"?"HOSPITAL_24H":route.feature==="night"?"HOSPITAL_NIGHT":route.feature==="exotic"?"HOSPITAL_EXOTIC":"HOSPITAL_REGION"):type==="ANIMAL_PHARMACY"?"PHARMACY_REGION":"FUNERAL_REGION";
  const hasListAd=type==="ANIMAL_HOSPITAL"
   ?shouldInsertHospitalListAd(result!.total,result!.facilities.length)
@@ -84,7 +86,7 @@ export async function FacilityDirectory({type,segments,query={}}:{type:FacilityK
  <FacilityResults facilities={result!.facilities} adSlot={adSlot} adAfterCard={type==="ANIMAL_PHARMACY"?PHARMACY_LIST_AD_AFTER_CARD:undefined}/>
  {!result!.total&&<p>현재 두들펫에서 확인된 {name} {feature} {directoryConfig[type].label}이 없습니다. <Link className="text-link" href={base}>전체 시설 보기</Link></p>}
  <nav className="chip-list" aria-label="페이지">{result!.page>1&&<Link className="chip-link" href={`?page=${result!.page-1}&sort=${query.sort==="name"?"name":"quality"}`} prefetch={false}>이전</Link>}{result!.page*30<result!.total&&<Link className="chip-link" href={`?page=${result!.page+1}&sort=${query.sort==="name"?"name":"quality"}`} prefetch={false}>다음</Link>}</nav>
- {!feature&&<section className="card content-panel regional-summary" aria-labelledby="regional-summary-heading"><h2 id="regional-summary-heading">{primaryKeyword} 공식 데이터 요약</h2><p>{regionalSummary(type,region,result!.stats)}</p><dl className="info-grid"><div><dt>영업 시설</dt><dd>{result!.stats.total}곳</dd></div><div><dt>지도 표시 가능</dt><dd>{result!.stats.coordinateCount}곳</dd></div><div><dt>전화번호 확인</dt><dd>{result!.stats.phoneCount}곳</dd></div><div><dt>공식 데이터 기준일</dt><dd>{result!.stats.sourceDate??"미확인"}</dd></div></dl>{type==="ANIMAL_HOSPITAL"&&regionalCostLink&&<Link className="text-link" href={regionalCostLink.path}>{name} 동물병원 진료비 통계 확인</Link>}</section>}
- {related.length>0&&<nav className="chip-list" aria-label="지역 관련 정보">{related.map(link=><Link className="chip-link" href={link.path} key={link.path} prefetch={false}>{name} {link.label}</Link>)}</nav>}
+ {!feature&&<section className="card content-panel regional-summary" aria-labelledby="regional-summary-heading"><h2 id="regional-summary-heading">{primaryKeyword} 공식 데이터 요약</h2><p>{regionalSummary(type,region,result!.stats)}</p><dl className="info-grid"><div><dt>영업 시설</dt><dd>{result!.stats.total}곳</dd></div><div><dt>지도 표시 가능</dt><dd>{result!.stats.coordinateCount}곳</dd></div><div><dt>전화번호 확인</dt><dd>{result!.stats.phoneCount}곳</dd></div><div><dt>공식 데이터 기준일</dt><dd>{result!.stats.sourceDate??"미확인"}</dd></div></dl>{type==="ANIMAL_HOSPITAL"&&regionalCostLink&&<Link className="text-link" href={regionalCostLink.path}>{regionalCostLink.regionName} 동물병원 진료비 통계 확인{regionalCostLink.scope==="parent"?" (상위 지역)":""}</Link>}</section>}
+ <RegionalJourney links={related}/>
  </div>;
 }
