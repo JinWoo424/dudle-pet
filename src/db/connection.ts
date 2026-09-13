@@ -11,6 +11,7 @@ export function getSql() {
     connection = postgres(url, { max: 4, prepare: false, connect_timeout: 10, idle_timeout: 20,
       ssl: { rejectUnauthorized: true, servername: new URL(url).hostname, ...(ca ? { ca } : {}) },
       onnotice: () => undefined });
+    if(process.env.VERCEL_ENV==="preview") console.info("[Dudle Preview DB]",JSON.stringify({event:"client-created",max:4,prepare:false,idleTimeout:20,connectTimeout:10,transactionPooler:new URL(url).port==="6543",tlsVerification:true}));
   }
   return connection;
 }

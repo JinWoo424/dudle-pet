@@ -6,6 +6,7 @@ import { mockFacilities, mockFeeStatistics } from "./mock";
 import { distanceMeters } from "@/lib/geo";
 import { unstable_cache } from "next/cache";
 import { cache } from "react";
+import { previewStage } from "@/lib/preview-server-timing";
 
 export function isMockMode() { return dataMode() === "mock"; }
 export interface FacilityQuery { type?: FacilityKind; regionSlug?: string; search?: string; feature?: Feature; page?: number; sort?: string; id?: string }
@@ -51,7 +52,10 @@ export async function queryFacilities(query: FacilityQuery = {}) {
  AND (${query.regionSlug ?? null}::text IS NULL OR r.full_slug=${query.regionSlug ?? null} OR starts_with(r.full_slug, ${(query.regionSlug ?? "") + "/"}))
  AND NOT EXISTS (SELECT 1 FROM unnest(${terms}::text[]) term WHERE strpos(lower(concat_ws(' ', f.name,f.road_address,f.jibun_address,f.province,f.city,f.district,f.legal_dong)), lower(term))=0)
  AND (${feature}::text IS NULL OR EXISTS (SELECT 1 FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.field_name=${feature} AND v.field_value='YES' AND v.expires_at>now() AND v.verified_at<=now() AND (v.source_url IS NOT NULL OR v.evidence_note IS NOT NULL)))`;
+ const endCount=previewStage("facilities.count");
  const [count] = await sql`SELECT count(*)::int AS total,count(*) FILTER(WHERE f.geo_status='VALID' AND f.location IS NOT NULL)::int AS coordinate_count,count(*) FILTER(WHERE f.phone_normalized IS NOT NULL)::int AS phone_count,count(*) FILTER(WHERE nullif(coalesce(f.road_address,f.jibun_address),'') IS NOT NULL)::int AS address_count,coalesce(avg(f.data_quality_score),0)::int AS average_quality,max(f.source_updated_at) AS source_date,max(f.last_synced_at) AS synced_at FROM facilities f LEFT JOIN regions r ON r.id=f.region_id WHERE ${where}`;
+ endCount();
+ const endRows=previewStage("facilities.rows");
  const rows = await sql`SELECT f.*,r.full_slug,
   (SELECT jsonb_agg(jsonb_build_object('fieldName',v.field_name,'fieldValue',v.field_value,'sourceType',v.source_type,'sourceUrl',v.source_url,'evidenceNote',v.evidence_note,'verifiedAt',v.verified_at,'expiresAt',v.expires_at)) FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.field_name IN ('open_24h','night_service','exotic_service','cat_service','parking_available')) AS verification_evidence,
   (SELECT max(verified_at) FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.expires_at>now() AND v.verified_at<=now()) AS verified_at,
@@ -71,6 +75,7 @@ export async function queryFacilities(query: FacilityQuery = {}) {
  WHERE ${where}
  ORDER BY ${query.sort === "name" ? sql`f.name ASC` : sql`f.data_quality_score DESC,f.name ASC`}, f.id
  LIMIT ${size} OFFSET ${(page-1)*size}`;
+ endRows();
  const date=(value:unknown)=>value?new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Seoul"}).format(new Date(String(value))):undefined;
  return { facilities:rows.map(mapFacility),total:Number(count.total),page,stats:{total:Number(count.total),coordinateCount:Number(count.coordinate_count),phoneCount:Number(count.phone_count),addressCount:Number(count.address_count),averageQuality:Number(count.average_quality),sourceDate:date(count.source_date),syncedAt:date(count.synced_at)} };
 }

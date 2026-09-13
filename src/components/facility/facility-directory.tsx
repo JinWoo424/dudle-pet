@@ -18,6 +18,7 @@ import { PHARMACY_LIST_AD_AFTER_CARD, shouldInsertHospitalListAd, shouldInsertPh
 import type { PageType } from "@/lib/seo";
 import { regionKeywordName, regionalDescription, regionalPrimaryKeyword, regionalSummary, regionalTitle } from "@/lib/regional-seo";
 import {shareMetadata} from "@/lib/share-metadata";
+import {previewStage} from "@/lib/preview-server-timing";
 
 export const directoryConfig = {
  ANIMAL_HOSPITAL:{ label:"동물병원", minimum:5 },
@@ -26,9 +27,12 @@ export const directoryConfig = {
 };
 export type DirectoryProps = { params:Promise<{segments?:string[]}>; searchParams:Promise<Record<string,string|string[]|undefined>> };
 async function loadDirectoryUncached(type:FacilityKind, segments:string[], query:Record<string,string|string[]|undefined>) {
+ const endLoad=previewStage("directory.load");
  const route=parseFacilityRoute(segments); if(!route) notFound();
  if(route.feature && type!=="ANIMAL_HOSPITAL") notFound();
+ const endRegion=previewStage("directory.region");
  const region=route.fullSlug ? await resolveRegion(route.fullSlug):null;
+ endRegion();
  if(route.fullSlug && !region) notFound();
  if(region&&route.fullSlug!==region.fullSlug){
   const tail=route.feature??route.id;
@@ -37,9 +41,11 @@ async function loadDirectoryUncached(type:FacilityKind, segments:string[], query
  if(route.id){
   const facility=await getFacility(route.id);
   if(!facility || facility.type!==type || facility.regionSlug!==route.fullSlug) notFound();
+  endLoad();
   return {route,region,facility,result:null};
  }
  const result=await queryFacilities({type,regionSlug:route.fullSlug||undefined,feature:route.feature,page:Number(query.page)||1,sort:typeof query.sort==="string"?query.sort:undefined});
+ endLoad();
  return {route,region,facility:null,result};
 }
 const loadDirectoryCached=cache(async(type:FacilityKind,segmentsKey:string,page:string|undefined,sort:string|undefined)=>
@@ -50,7 +56,9 @@ export function loadDirectory(type:FacilityKind,segments:string[],query:Record<s
  return loadDirectoryCached(type,segments.join("/"),page,sort);
 }
 export async function directoryMetadata(type:FacilityKind,segments:string[],query:Record<string,string|string[]|undefined>={}):Promise<Metadata>{
+ const endMetadata=previewStage("directory.metadata.data");
  const data=await loadDirectory(type,segments,query); const {label,minimum}=directoryConfig[type];
+ endMetadata();
  const region=regionKeywordName(data.region); const feature=data.route.feature?({"24h":"24시간",night:"야간",exotic:"특수동물"}[data.route.feature])+" ":"";
  const title=data.facility?`${data.facility.name} | ${region} ${label} 정보`:data.route.feature?`${region} ${feature}${label} ${(data.result?.total??0)}곳 | 확인된 운영정보`:regionalTitle(type,data.region,data.result!.stats);
  const ready=data.facility?Boolean(data.facility.name&&data.facility.roadAddress&&data.facility.regionSlug&&data.facility.businessStatus!=="UNKNOWN"):(data.result?.total??0)>=(data.route.feature==="24h"?2:data.route.feature?3:minimum);
@@ -59,15 +67,21 @@ export async function directoryMetadata(type:FacilityKind,segments:string[],quer
  return {title,description,alternates:{canonical},openGraph:shareMetadata(title,description,canonical),robots:previewRobotsPolicy()??{index:!isMockMode()&&ready&&!Object.keys(query).length&&await seoApproved(canonical),follow:true}};
 }
 export async function FacilityDirectory({type,segments,query={}}:{type:FacilityKind;segments:string[];query?:Record<string,string|string[]|undefined>}){
+ const endPageData=previewStage("directory.page.data");
  const {route,region,facility,result}=await loadDirectory(type,segments,query);
+ endPageData();
  if(facility) return <FacilityDetail facility={facility} typeLabel={directoryConfig[type].label} typePath={typePaths[type]} />;
  const name=regionKeywordName(region); const feature=route.feature?{"24h":"24시간",night:"야간",exotic:"특수동물"}[route.feature]:"";
  const base=`/${typePaths[type]}${route.fullSlug?"/"+route.fullSlug:""}`;
  const countKey=type==="ANIMAL_HOSPITAL"?"hospitalCount":type==="ANIMAL_PHARMACY"?"pharmacyCount":"funeralCount";
+ const endChildren=previewStage("directory.children");
  const children=(await listRegions()).filter(r=>(region?r.parentId===region.id:!r.parentId)&&(r[countKey]??0)>=directoryConfig[type].minimum);
+ endChildren();
  const synced=result!.stats.syncedAt;
  const currentPath=base+(route.feature?`/${route.feature}`:"");
+ const endRelated=previewStage("directory.related");
  const related=region?await regionalJourney(region.fullSlug,currentPath):[];
+ endRelated();
  const regionalCostLink=related.find(link=>link.pageType==="COST_REGION");
  const pageType:PageType=type==="ANIMAL_HOSPITAL"?(route.feature==="24h"?"HOSPITAL_24H":route.feature==="night"?"HOSPITAL_NIGHT":route.feature==="exotic"?"HOSPITAL_EXOTIC":"HOSPITAL_REGION"):type==="ANIMAL_PHARMACY"?"PHARMACY_REGION":"FUNERAL_REGION";
  const hasListAd=type==="ANIMAL_HOSPITAL"
