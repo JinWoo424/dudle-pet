@@ -93,7 +93,9 @@ try {
 }
 
 const maxLayoutShift = Math.max(...rows.map((row) => row.layoutShift), 0);
+const maxLayoutShiftRecord = rows.reduce((maximum, row) => row.layoutShift > maximum.layoutShift ? row : maximum, rows[0]);
 console.log(`Mobile UI QA: ${rows.length} page/viewport checks, max CLS ${maxLayoutShift.toFixed(4)}`);
+console.log(`Max CLS route: ${maxLayoutShiftRecord.route} at ${maxLayoutShiftRecord.width}px`);
 if (failures.length) {
   for (const failure of failures) {
     console.error(JSON.stringify(failure));

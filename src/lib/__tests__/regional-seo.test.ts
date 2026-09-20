@@ -13,7 +13,7 @@ describe("regional SEO content",()=>{
   expect(regionKeywordName({...region,name:"강남구",shortName:"강남",seoName:"강남구"})).toBe("강남구");
  });
  it("starts the title with the primary keyword and uses actual counts",()=>{
-  expect(regionalTitle("ANIMAL_HOSPITAL",region,stats)).toBe("여수 동물병원 15곳 | 지도·전화·병원 정보");
+  expect(regionalTitle("ANIMAL_HOSPITAL",region,stats)).toBe("여수 동물병원 찾기 | 15곳 지도·전화·병원 정보");
  });
  it("builds a factual description from measured fields",()=>{
   const description=regionalDescription("ANIMAL_PHARMACY",region,stats);

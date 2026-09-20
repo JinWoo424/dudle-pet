@@ -30,7 +30,7 @@ export function regionalPrimaryKeyword(type: FacilityKind, region?: RegionView |
 
 export function regionalTitle(type: FacilityKind, region: RegionView | null | undefined, stats: RegionalSeoStats) {
   const keyword = regionalPrimaryKeyword(type, region);
-  return `${keyword} ${stats.total}곳 | ${labels[type].detail}`;
+  return `${keyword} 찾기 | ${stats.total}곳 ${labels[type].detail}`;
 }
 
 export function regionalDescription(type: FacilityKind, region: RegionView | null | undefined, stats: RegionalSeoStats) {

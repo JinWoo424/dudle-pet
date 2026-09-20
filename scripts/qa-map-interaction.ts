@@ -4,8 +4,10 @@ async function main(){
  const base=(process.env.MAP_QA_URL??"http://localhost:3000").replace(/\/$/,"");
  const route=process.env.MAP_QA_PATH??"/hospital/jeonnam-gwangju/yeosu";
  const browser=await chromium.launch({headless:true});
- const page=await browser.newPage();
- await page.goto(base+route,{waitUntil:"networkidle"});
+ const context=await browser.newContext({extraHTTPHeaders:process.env.VERCEL_AUTOMATION_BYPASS_SECRET?{"x-vercel-protection-bypass":process.env.VERCEL_AUTOMATION_BYPASS_SECRET,"x-vercel-set-bypass-cookie":"true"}:undefined});
+ const page=await context.newPage();
+ await page.goto(base+route,{waitUntil:"domcontentloaded",timeout:45000});
+ await page.waitForTimeout(1500);
  const cards=page.locator(".facility-list > div");
  const selectable=page.getByRole("button",{name:"지도에서 선택"}).first();
  await selectable.click();

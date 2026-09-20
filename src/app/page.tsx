@@ -82,7 +82,7 @@ export default function HomePage() {
           <div className="card content-panel">
             <span className="eyebrow">많이 확인하는 진료비</span>
             <h2>항목별 지역 통계</h2>
-            <p>검증된 공식 파일이 등록된 항목만 공개합니다. 자료가 없는 항목에 가상 가격을 표시하지 않습니다.</p><div className="chip-list"><Link className="chip-link" href="/cost">공식 진료비 데이터 상태 확인</Link><Link className="chip-link" href="/cost/seoul">서울 동물병원 진료비</Link><Link className="chip-link" href="/cost/busan">부산 동물병원 진료비</Link><Link className="chip-link" href="/pharmacy/seoul">서울 동물약국</Link><Link className="chip-link" href="/pharmacy/busan">부산 동물약국</Link></div>
+            <p>검증된 공식 파일이 등록된 항목만 공개합니다. 자료가 없는 항목에 가상 가격을 표시하지 않습니다.</p><div className="chip-list"><Link className="chip-link" href="/cost" prefetch={false}>공식 진료비 데이터 상태 확인</Link><Link className="chip-link" href="/cost/seoul" prefetch={false}>서울 동물병원 진료비</Link><Link className="chip-link" href="/cost/busan" prefetch={false}>부산 동물병원 진료비</Link><Link className="chip-link" href="/pharmacy/seoul" prefetch={false}>서울 동물약국</Link><Link className="chip-link" href="/pharmacy/busan" prefetch={false}>부산 동물약국</Link></div>
           </div>
         </div>
       </section>
