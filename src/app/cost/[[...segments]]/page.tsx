@@ -11,6 +11,7 @@ import { previewRobotsPolicy } from "@/lib/deployment";
 import { cache } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { regionKeywordName } from "@/lib/regional-seo";
+import { shareMetadata } from "@/lib/metadata";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
@@ -19,8 +20,7 @@ const weightLabels:Record<string,string>={KG_5:"5kg",KG_10:"10kg",KG_20:"20kg",N
 const loadCost=cache(async(segmentsKey:string,queryKey:string)=>{
  const segments=segmentsKey?segmentsKey.split("/"):[];const item=itemCodes.has(segments.at(-1)??"")?segments.pop():undefined;
  if(segments.length>3||segments.some(segment=>!/^[a-z0-9-]+$/.test(segment)))notFound();
- const slug=segments.join("/");const currentSlug=currentRegionSlugFromCost(slug);const region=slug?await resolveRegion(currentSlug):null;if(slug&&!region)notFound();
- const parent=region?.level==='CITY'?await resolveRegion(currentSlug.split('/')[0]):null;
+ const slug=segments.join("/");const currentSlug=currentRegionSlugFromCost(slug);
  const query=Object.fromEntries(new URLSearchParams(queryKey));const animalType=animalTypes.has(query.animal??"")?query.animal:undefined;const weightClass=weightClasses.has(query.weight??"")?query.weight:undefined;
  if(query.region!==undefined||query.item!==undefined){
   const target=query.region??slug,chosen=query.item||undefined;
@@ -28,11 +28,16 @@ const loadCost=cache(async(segmentsKey:string,queryKey:string)=>{
   const filters=new URLSearchParams();for(const key of ['year','animal','weight'])if(query[key])filters.set(key,query[key]!);
   redirect('/cost'+(target?'/'+target:'')+(chosen?'/'+chosen:'')+(filters.size?'?'+filters:''));
  }
- const years=await listFeeYears();const surveyYear=query.year?Number(query.year):years[0];if(query.year&&!years.includes(surveyYear))notFound();
- const allRows=await listFeeStatistics(item,currentSlug||undefined,{surveyYear});
+ const [region,years]=await Promise.all([slug?resolveRegion(currentSlug):Promise.resolve(null),listFeeYears()]);if(slug&&!region)notFound();
+ const surveyYear=query.year?Number(query.year):years[0];if(query.year&&!years.includes(surveyYear))notFound();
+ const [parent,allRows,regionLinks]=await Promise.all([
+  region?.level==='CITY'?resolveRegion(currentSlug.split('/')[0]):Promise.resolve(null),
+  listFeeStatistics(item,currentSlug||undefined,{surveyYear}),
+  listFeeRegionLinks('',surveyYear),
+ ]);
  const filtered=allRows.filter(r=>(!animalType||r.animalType===animalType)&&(!weightClass||r.weightClass===weightClass));
  const ownRows=filtered.filter(r=>currentSlug?r.regionSlug===currentSlug:r.regionLevel==='NATIONAL');
- const rows=ownRows.length?filtered:[];const regionLinks=await listFeeRegionLinks('',surveyYear);
+ const rows=ownRows.length?filtered:[];
  return {slug,currentSlug,region,parent,item,rows,ownRows,allRows,regionLinks,animalType,weightClass,years,surveyYear,query};
 });
 async function load(params:Props["params"],searchParams?:Props["searchParams"]){
@@ -43,7 +48,9 @@ export async function generateMetadata({params,searchParams}:Props):Promise<Meta
  const {region,item,ownRows:rows,surveyYear,query}=await load(params,searchParams);const label=regionKeywordName(region);const itemName=item?officialFeeItemByCode.get(item)?.itemName:"";
  const canonical="/cost"+((await params).segments?.length?"/"+(await params).segments!.join("/"):"");
  const itemCount=new Set(rows.map(row=>row.itemCode)).size;const sourceDate=rows.map(row=>row.sourceDate).filter(Boolean).sort().at(-1);
- return {title:item?`${label} 동물병원 ${itemName} 진료비 | ${surveyYear??"공식"} 통계`:`${label} 동물병원 진료비 | ${surveyYear??"공식"} 공식 통계`,description:`${label} 동물병원 진료비 ${itemCount}개 항목의 최저·중간·평균·최고 비용을 ${surveyYear??"공식"}년 조사 기준으로 확인하세요. 기준일 ${sourceDate??"미확인"}이며 개별 병원 가격과 다를 수 있습니다.`,alternates:{canonical},robots:previewRobotsPolicy()??{index:!isMockMode()&&!Object.keys(query).length&&rows.some(r=>[r.minimumPrice,r.medianPrice,r.averagePrice,r.maximumPrice].some(p=>p!==null))&&await seoApproved(canonical),follow:true}};
+ const title=item?`${label} 동물병원 ${itemName} 진료비 | ${surveyYear??"공식"} 통계`:`${label} 동물병원 진료비 | ${surveyYear??"공식"} 공식 통계`;
+ const description=`${label} 동물병원 진료비 ${itemCount}개 항목의 최저·중간·평균·최고 비용을 ${surveyYear??"공식"}년 조사 기준으로 확인하세요. 기준일 ${sourceDate??"미확인"}이며 개별 병원 가격과 다를 수 있습니다.`;
+ return {title,description,alternates:{canonical},...shareMetadata(title,description,canonical),robots:previewRobotsPolicy()??{index:!isMockMode()&&!Object.keys(query).length&&rows.some(r=>[r.minimumPrice,r.medianPrice,r.averagePrice,r.maximumPrice].some(p=>p!==null))&&await seoApproved(canonical),follow:true}};
 }
 export const revalidate=21600;
 export const runtime="nodejs";

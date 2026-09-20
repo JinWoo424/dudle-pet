@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MapPin, Navigation, Phone, ShieldCheck } from "lucide-react";
 import type { FacilityView } from "@/domain/facility";
-import { isMockMode, nearbyFacilities, listFeeStatistics } from "@/data/repository";
+import { isMockMode, nearbyFacilityGroups, listFeeStatistics } from "@/data/repository";
 import { KakaoMap } from "@/components/map/kakao-map";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { MockNotice } from "@/components/data/mock-notice";
@@ -11,21 +11,26 @@ import { costRegionSlug } from "@/data/fee-catalog";
 import { directionsUrl, facilityPath, safeJson, statusLabels } from "@/lib/facility-display";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { hasFacilityDetailAdQuality } from "@/components/ads/ad-placement-policy";
-import { seoApproved } from "@/data/seo-repository";
+import { seoApproved, regionalJourney } from "@/data/seo-repository";
+import { chooseNearbyPharmacyRadius } from "@/lib/nearby";
+import { RegionalJourney } from "@/components/navigation/regional-journey";
 export async function FacilityDetail({facility,typeLabel="동물병원",typePath="hospital"}:{facility:FacilityView;typeLabel?:string;typePath?:string}) {
  const hasCoordinates=facility.latitude!=null&&facility.longitude!=null;
- let pharmacyRadius=3000;
- let nearbyPharmacies=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:pharmacyRadius,type:"ANIMAL_PHARMACY",excludeId:facility.id}):[];
- if(hasCoordinates&&nearbyPharmacies.length<2){pharmacyRadius=5000;nearbyPharmacies=await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:pharmacyRadius,type:"ANIMAL_PHARMACY",excludeId:facility.id});}
- if(hasCoordinates&&nearbyPharmacies.length<2){pharmacyRadius=10000;nearbyPharmacies=await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:pharmacyRadius,type:"ANIMAL_PHARMACY",excludeId:facility.id});}
- const nearbyHospitals=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,type:"ANIMAL_HOSPITAL",excludeId:facility.id}):[];
- const nearbyFunerals=hasCoordinates?await nearbyFacilities({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,type:"PET_FUNERAL",excludeId:facility.id}):[];
+ const path=facilityPath(facility);
+ const [nearby,fees,detailAdsAllowed,related]=await Promise.all([
+  hasCoordinates?nearbyFacilityGroups({latitude:facility.latitude!,longitude:facility.longitude!,radiusMeters:10000,excludeId:facility.id}):Promise.resolve({ANIMAL_PHARMACY:[],ANIMAL_HOSPITAL:[],PET_FUNERAL:[]}),
+  facility.regionSlug?listFeeStatistics("xray",facility.regionSlug):Promise.resolve([]),
+  !isMockMode()&&path!==null&&hasFacilityDetailAdQuality(facility)?seoApproved(path):Promise.resolve(false),
+  facility.regionSlug&&path?regionalJourney(facility.regionSlug,path):Promise.resolve([]),
+ ]);
+ const within=(radius:number)=>nearby.ANIMAL_PHARMACY.filter(item=>(item.distanceMeters??Infinity)<=radius);
+ const pharmacyRadius=chooseNearbyPharmacyRadius(nearby.ANIMAL_PHARMACY.flatMap(item=>item.distanceMeters==null?[]:[item.distanceMeters]));
+ const nearbyPharmacies=within(pharmacyRadius);
+ const nearbyHospitals=nearby.ANIMAL_HOSPITAL;
+ const nearbyFunerals=nearby.PET_FUNERAL;
  const around=[...nearbyPharmacies,...nearbyHospitals,...nearbyFunerals];
- const fees=facility.regionSlug?await listFeeStatistics("xray",facility.regionSlug):[];
  const fee=fees.find(f=>f.regionSlug===facility.regionSlug && f.regionLevel==="CITY");
  const region=[facility.province,facility.city,facility.district].filter(Boolean).join(" ");
- const path=facilityPath(facility);
- const detailAdsAllowed=!isMockMode()&&path!==null&&hasFacilityDetailAdQuality(facility)&&await seoApproved(path);
  const structured={"@context":"https://schema.org","@type":"LocalBusiness",name:facility.name,address:facility.roadAddress,...(facility.phone?{telephone:facility.phone}:{}),...(path?{url:new URL(path,process.env.NEXT_PUBLIC_SITE_URL||"https://pet.dudle.co.kr").href}:{}),...(hasCoordinates?{geo:{"@type":"GeoCoordinates",latitude:facility.latitude,longitude:facility.longitude}}:{})};
  return <div className="shell detail-page">
  <script type="application/ld+json" dangerouslySetInnerHTML={{__html:safeJson(structured)}}/>
@@ -33,6 +38,7 @@ export async function FacilityDetail({facility,typeLabel="동물병원",typePath
  <section className="detail-hero card"><div><span className="status-open">{statusLabels[facility.businessStatus]}</span><h1>{facility.name}</h1><p className="address"><MapPin size={18}/>{facility.roadAddress||"주소 미확인"}</p></div><div className="detail-cta">{facility.phone&&<a className="primary-button" href={`tel:${facility.phone}`}><Phone size={18}/>전화하기</a>}<a className="secondary-button" href={directionsUrl(facility)} target="_blank" rel="noreferrer"><Navigation size={18}/>길찾기</a></div></section>
  <MockNotice/>
  {facility.regionSlug&&<nav className="detail-region-link" aria-label="지역 시설 목록"><Link className="text-link" href={`/${typePath}/${facility.regionSlug}`}>{region} {typeLabel} 전체 보기</Link></nav>}
+ <RegionalJourney links={related}/>
  <div className="detail-grid"><div className="detail-main">
  <section className="card detail-section"><h2><ShieldCheck size={21}/>공식 등록정보</h2><dl className="info-grid"><div><dt>영업 상태</dt><dd>{statusLabels[facility.businessStatus]}</dd></div><div><dt>전화번호</dt><dd>{facility.phone||"정보 없음"}</dd></div><div><dt>주소</dt><dd>{facility.roadAddress||"미확인"}</dd></div><div><dt>출처</dt><dd>{facility.sourceName}</dd></div><div><dt>원천 데이터 수정일</dt><dd>{facility.sourceDate}</dd></div><div><dt>두들펫 최종 동기화일</dt><dd>{facility.syncedAt||"미확인"}</dd></div></dl><p className="quality-note">공식 등록상 영업은 현재 시간에 진료 중이라는 뜻이 아닙니다. 방문 전 전화로 확인하세요.</p></section>
  <section className="card detail-section"><h2>두들펫 확인정보</h2><div className="tag-row">{facility.features.verificationStatus==="VALID"&&<>{facility.features.open24h==="YES"&&<span className="pill">24시간</span>}{facility.features.nightService==="YES"&&<span className="pill">야간 진료</span>}{facility.features.exoticService==="YES"&&<span className="pill">특수동물</span>}</>}</div><p className="muted">{facility.features.verificationStatus==="VALID" ? `근거와 유효기간이 있는 확인정보만 표시합니다. 최근 확인일: ${facility.features.verifiedAt}`:"추가 운영정보는 아직 확인되지 않았습니다. 미확인은 ‘아니오’가 아닙니다."}</p></section>

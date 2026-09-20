@@ -51,8 +51,8 @@ export async function queryFacilities(query: FacilityQuery = {}) {
  AND (${query.regionSlug ?? null}::text IS NULL OR r.full_slug=${query.regionSlug ?? null} OR starts_with(r.full_slug, ${(query.regionSlug ?? "") + "/"}))
  AND NOT EXISTS (SELECT 1 FROM unnest(${terms}::text[]) term WHERE strpos(lower(concat_ws(' ', f.name,f.road_address,f.jibun_address,f.province,f.city,f.district,f.legal_dong)), lower(term))=0)
  AND (${feature}::text IS NULL OR EXISTS (SELECT 1 FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.field_name=${feature} AND v.field_value='YES' AND v.expires_at>now() AND v.verified_at<=now() AND (v.source_url IS NOT NULL OR v.evidence_note IS NOT NULL)))`;
- const [count] = await sql`SELECT count(*)::int AS total,count(*) FILTER(WHERE f.geo_status='VALID' AND f.location IS NOT NULL)::int AS coordinate_count,count(*) FILTER(WHERE f.phone_normalized IS NOT NULL)::int AS phone_count,count(*) FILTER(WHERE nullif(coalesce(f.road_address,f.jibun_address),'') IS NOT NULL)::int AS address_count,coalesce(avg(f.data_quality_score),0)::int AS average_quality,max(f.source_updated_at) AS source_date,max(f.last_synced_at) AS synced_at FROM facilities f LEFT JOIN regions r ON r.id=f.region_id WHERE ${where}`;
- const rows = await sql`SELECT f.*,r.full_slug,
+ const countQuery = sql`SELECT count(*)::int AS total,count(*) FILTER(WHERE f.geo_status='VALID' AND f.location IS NOT NULL)::int AS coordinate_count,count(*) FILTER(WHERE f.phone_normalized IS NOT NULL)::int AS phone_count,count(*) FILTER(WHERE nullif(coalesce(f.road_address,f.jibun_address),'') IS NOT NULL)::int AS address_count,coalesce(avg(f.data_quality_score),0)::int AS average_quality,max(f.source_updated_at) AS source_date,max(f.last_synced_at) AS synced_at FROM facilities f LEFT JOIN regions r ON r.id=f.region_id WHERE ${where}`;
+ const rowsQuery = sql`SELECT f.*,r.full_slug,
   (SELECT jsonb_agg(jsonb_build_object('fieldName',v.field_name,'fieldValue',v.field_value,'sourceType',v.source_type,'sourceUrl',v.source_url,'evidenceNote',v.evidence_note,'verifiedAt',v.verified_at,'expiresAt',v.expires_at)) FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.field_name IN ('open_24h','night_service','exotic_service','cat_service','parking_available')) AS verification_evidence,
   (SELECT max(verified_at) FROM current_facility_verifications v WHERE v.facility_id=f.id AND v.expires_at>now() AND v.verified_at<=now()) AS verified_at,
   verified.open_24h,verified.night_service,verified.exotic_service,verified.cat_service,verified.parking_available
@@ -71,6 +71,7 @@ export async function queryFacilities(query: FacilityQuery = {}) {
  WHERE ${where}
  ORDER BY ${query.sort === "name" ? sql`f.name ASC` : sql`f.data_quality_score DESC,f.name ASC`}, f.id
  LIMIT ${size} OFFSET ${(page-1)*size}`;
+ const [[count],rows] = await Promise.all([countQuery,rowsQuery]);
  const date=(value:unknown)=>value?new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Seoul"}).format(new Date(String(value))):undefined;
  return { facilities:rows.map(mapFacility),total:Number(count.total),page,stats:{total:Number(count.total),coordinateCount:Number(count.coordinate_count),phoneCount:Number(count.phone_count),addressCount:Number(count.address_count),averageQuality:Number(count.average_quality),sourceDate:date(count.source_date),syncedAt:date(count.synced_at)} };
 }
@@ -121,4 +122,23 @@ export async function nearbyFacilities(input: { latitude:number;longitude:number
  AND ST_DWithin(f.location,ST_SetSRID(ST_MakePoint(${input.longitude},${input.latitude}),4326)::geography,${input.radiusMeters})
  ORDER BY distance_meters,f.id LIMIT 30`;
  return rows.map(mapFacility);
+}
+
+export async function nearbyFacilityGroups(input:{latitude:number;longitude:number;radiusMeters:number;excludeId?:string}) {
+ const kinds:FacilityKind[]=["ANIMAL_PHARMACY","ANIMAL_HOSPITAL","PET_FUNERAL"];
+ if(isMockMode()){
+  const rows=mockRows().filter(f=>f.id!==input.excludeId&&f.latitude!=null&&f.longitude!=null).map(f=>({...f,distanceMeters:distanceMeters(input,{latitude:f.latitude!,longitude:f.longitude!})})).filter(f=>f.distanceMeters<=input.radiusMeters).sort((a,b)=>a.distanceMeters-b.distanceMeters);
+  return Object.fromEntries(kinds.map(kind=>[kind,rows.filter(row=>row.type===kind).slice(0,30)])) as Record<FacilityKind,FacilityView[]>;
+ }
+ const rows=await getSql()`WITH ranked AS (
+  SELECT f.*,r.full_slug,ST_Distance(f.location,ST_SetSRID(ST_MakePoint(${input.longitude},${input.latitude}),4326)::geography) AS distance_meters,
+   row_number() OVER(PARTITION BY f.facility_type ORDER BY ST_Distance(f.location,ST_SetSRID(ST_MakePoint(${input.longitude},${input.latitude}),4326)::geography),f.id) AS type_rank
+  FROM facilities f LEFT JOIN regions r ON r.id=f.region_id
+  WHERE f.is_active AND f.business_status='OPEN' AND f.geo_status='VALID'
+   AND f.facility_type IN ('ANIMAL_HOSPITAL','ANIMAL_PHARMACY','PET_FUNERAL')
+   AND (${input.excludeId??null}::uuid IS NULL OR f.id<>${input.excludeId??null}::uuid)
+   AND ST_DWithin(f.location,ST_SetSRID(ST_MakePoint(${input.longitude},${input.latitude}),4326)::geography,${input.radiusMeters})
+ ) SELECT * FROM ranked WHERE type_rank<=30 ORDER BY facility_type,distance_meters,id`;
+ const mapped=rows.map(mapFacility);
+ return Object.fromEntries(kinds.map(kind=>[kind,mapped.filter(row=>row.type===kind)])) as Record<FacilityKind,FacilityView[]>;
 }

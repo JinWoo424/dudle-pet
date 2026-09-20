@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "두들펫 — 우리 동네 반려동물 시설 정보", template: "%s | 두들펫" },
   description: "공식 등록 동물병원·동물약국·반려동물 장례시설과 지역 진료비 통계를 확인하세요.",
+  openGraph: { type:"website", locale:"ko_KR", siteName:"두들펫", title:"두들펫 — 우리 동네 반려동물 시설 정보", description:"공식 등록 동물병원·동물약국·반려동물 장례시설과 지역 진료비 통계를 확인하세요.", url:"/", images:[{url:"/images/pet-map-hero.png",alt:"두들펫 반려동물 시설 지도"}] },
+  twitter: { card:"summary_large_image", title:"두들펫 — 우리 동네 반려동물 시설 정보", description:"공식 등록 동물병원·동물약국·반려동물 장례시설과 지역 진료비 통계를 확인하세요.", images:["/images/pet-map-hero.png"] },
   robots: isPreviewDeployment() ? { index: false, follow: false } : undefined,
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
