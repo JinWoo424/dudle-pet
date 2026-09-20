@@ -12,6 +12,7 @@ import { cache } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { regionKeywordName } from "@/lib/regional-seo";
 import { shareMetadata } from "@/lib/metadata";
+import { NavigationLink } from "@/components/navigation/navigation-link";
 type Props={params:Promise<{segments?:string[]}>;searchParams:Promise<Record<string,string|undefined>>};
 const itemCodes=new Set(officialFeeItems.map(item=>item.itemCode));
 const animalTypes=new Set(["DOG","CAT","ALL","NOT_APPLICABLE"]),weightClasses=new Set(["KG_5","KG_10","KG_20","NOT_APPLICABLE"]);
@@ -61,9 +62,16 @@ export default async function CostPage({params,searchParams}:Props){
  const canonical="/cost"+((await params).segments?.length?"/"+(await params).segments!.join("/"):"");
  const costSeoReady=!isMockMode()&&!Object.keys(query).length&&ownRows.some(r=>[r.minimumPrice,r.medianPrice,r.averagePrice,r.maximumPrice].some(p=>p!==null))&&await seoApproved(canonical);
  const publishedItemCount=new Set(ownRows.map(row=>row.itemCode)).size;const sourceDate=ownRows.map(row=>row.sourceDate).filter(Boolean).sort().at(-1);
- return <div className="shell listing-page"><Breadcrumbs items={[{label:"진료비",href:"/cost"},...(region?[{label:region.name}]:[]),...(item?[{label:itemName!}]:[])]}/><MockNotice/>
+ const depth=currentSlug?currentSlug.split('/').length:0;
+ const regionalDestinations=!currentSlug
+  ?regionLinks.filter(link=>link.slug.split('/').length===1)
+  :region?.level==='PROVINCE'
+   ?regionLinks.filter(link=>link.slug.startsWith(currentSlug+'/')&&link.slug.split('/').length===depth+1)
+   :regionLinks.filter(link=>link.slug===currentSlug.split('/')[0]);
+ return <div className="shell listing-page"><Breadcrumbs items={[{label:"진료비",href:"/cost"},...(region?[{label:region.name,...(item?{href:`/cost/${slug}`}:{})}]:[]),...(item?[{label:itemName!}]:[])]}/><MockNotice/>
   <div className="listing-header"><div><span className="eyebrow">{surveyYear?`${surveyYear}년 `:''}공식 지역 진료비 통계</span><h1>{label} 동물병원 {item?`${itemName} 비용`:"진료비"}</h1><p>농림축산식품부 「동물병원 진료비용 현황 조사 및 공개」 자료만 표시합니다. 실제 개별 동물병원의 진료비와 다를 수 있습니다.</p></div></div>
   {ownRows.length>0&&<section className="card content-panel regional-summary"><h2>{label} 동물병원 진료비 공식 데이터 요약</h2><p>{surveyYear}년 공식 조사에서 {label}에 연결된 진료비 {publishedItemCount}개 항목의 공개 통계를 제공합니다. 공개되지 않은 값은 추정하거나 0원으로 바꾸지 않습니다.</p><dl className="info-grid"><div><dt>조사 연도</dt><dd>{surveyYear}년</dd></div><div><dt>공개 항목</dt><dd>{publishedItemCount}개</dd></div><div><dt>통계 조건</dt><dd>{ownRows.length}개</dd></div><div><dt>공식 데이터 기준일</dt><dd>{sourceDate??"미확인"}</dd></div></dl></section>}
+  {regionalDestinations.length>0&&<section className="card content-panel"><h2>{currentSlug?"관련 지역":"광역지역"} 진료비 보기</h2><div className="chip-list">{regionalDestinations.map(link=><NavigationLink className="chip-link" href={`/cost/${costRegionSlug(link.slug)}`} key={link.slug}>{link.name}</NavigationLink>)}</div></section>}
   <form className="card content-panel" method="get"><h2>진료비 찾기</h2><div className="fee-selectors">
    <label>조사년도<select name="year" defaultValue={surveyYear??''}>{years.map(y=><option key={y} value={y}>{y}년</option>)}{!years.length&&<option value="">자료 없음</option>}</select></label>
    <label>지역<select name="region" defaultValue={slug}><option value="">전국</option>{slug&&!regionLinks.some(r=>costRegionSlug(r.slug)===slug)&&<option value={slug}>{region?.name}</option>}{regionLinks.map(r=><option key={r.slug} value={costRegionSlug(r.slug)}>{r.surveyProvinceName} {r.name===r.surveyProvinceName?'':r.name}</option>)}</select></label>

@@ -48,6 +48,7 @@
     "seo:refresh": "tsx scripts/refresh-seo.ts",
     "seo:audit": "tsx scripts/seo-audit.ts",
     "seo:index-quality": "tsx scripts/seo-index-quality.ts",
+    "seo:graph": "tsx scripts/seo-graph-audit.ts",
     "qa:seo": "node scripts/qa-national-seo.mjs",
     "scan:secrets": "node scripts/scan-secrets.mjs",
     "admin:hash-password": "node scripts/hash-admin-password.mjs",
