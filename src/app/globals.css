@@ -218,7 +218,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .navigation-pending[data-pending="true"] { width:1.25rem; opacity:.65; animation:navigation-pulse .7s ease-in-out infinite alternate; }
 a[href]:active { opacity:.72; }
 @keyframes navigation-pulse { to { opacity:.2; } }
-.route-loading { padding-block: 2rem 4rem; }
+.route-loading { min-height: calc(100svh - 4.25rem); padding-block: 2rem 4rem; }
 .route-loading-heading, .route-loading-summary, .route-loading-card span { display:block; border-radius:.75rem; background:linear-gradient(90deg,#edf3f0 25%,#f8fbfa 50%,#edf3f0 75%); background-size:200% 100%; animation:route-loading-shimmer 1.2s ease-in-out infinite; }
 .route-loading-heading { width:min(22rem,75%); height:2.5rem; margin-block:1rem; }
 .route-loading-summary { width:min(38rem,95%); height:1.1rem; margin-bottom:2rem; }
