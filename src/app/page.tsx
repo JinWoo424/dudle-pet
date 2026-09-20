@@ -60,7 +60,7 @@ export default function HomePage() {
           <div className="section-heading"><div><span className="eyebrow">바로 찾기</span><h2 id="category-heading">필요한 정보부터 확인하세요</h2></div></div>
           <div className="category-grid">
             {categories.map(({ href, label, detail, icon: Icon }) => (
-              <Link className="card category-card" href={href} key={href}>
+              <Link className="card category-card" href={href} key={href} prefetch={false}>
                 <span className="category-icon"><Icon size={22} aria-hidden="true" /></span>
                 <span><strong>{label}</strong><small>{detail}</small></span>
               </Link>
@@ -77,12 +77,12 @@ export default function HomePage() {
             <span className="eyebrow">많이 찾는 지역</span>
             <h2>지역별 동물병원</h2>
             <p>공식 등록상 영업 시설이 충분한 주요 지역을 바로 확인하세요.</p>
-            <div className="chip-list">{majorHospitalRegions.map(([label,href])=><Link className="chip-link" href={href} key={href}>{label}</Link>)}</div>
+            <div className="chip-list">{majorHospitalRegions.map(([label,href])=><Link className="chip-link" href={href} key={href} prefetch={false}>{label}</Link>)}</div>
           </div>
           <div className="card content-panel">
             <span className="eyebrow">많이 확인하는 진료비</span>
             <h2>항목별 지역 통계</h2>
-            <p>검증된 공식 파일이 등록된 항목만 공개합니다. 자료가 없는 항목에 가상 가격을 표시하지 않습니다.</p><div className="chip-list"><Link className="chip-link" href="/cost">공식 진료비 데이터 상태 확인</Link><Link className="chip-link" href="/cost/seoul">서울 동물병원 진료비</Link><Link className="chip-link" href="/cost/busan">부산 동물병원 진료비</Link><Link className="chip-link" href="/pharmacy/seoul">서울 동물약국</Link><Link className="chip-link" href="/pharmacy/busan">부산 동물약국</Link></div>
+            <p>검증된 공식 파일이 등록된 항목만 공개합니다. 자료가 없는 항목에 가상 가격을 표시하지 않습니다.</p><div className="chip-list"><Link className="chip-link" href="/cost" prefetch={false}>공식 진료비 데이터 상태 확인</Link><Link className="chip-link" href="/cost/seoul" prefetch={false}>서울 동물병원 진료비</Link><Link className="chip-link" href="/cost/busan" prefetch={false}>부산 동물병원 진료비</Link><Link className="chip-link" href="/pharmacy/seoul" prefetch={false}>서울 동물약국</Link><Link className="chip-link" href="/pharmacy/busan" prefetch={false}>부산 동물약국</Link></div>
           </div>
         </div>
       </section>
