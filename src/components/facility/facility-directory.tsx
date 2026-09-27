@@ -20,6 +20,7 @@ import { regionKeywordName, regionalDescription, regionalPrimaryKeyword, regiona
 import { shareMetadata } from "@/lib/metadata";
 import { paginationPages } from "@/lib/pagination";
 import { NavigationLink } from "@/components/navigation/navigation-link";
+import { facilitySearchMetadata } from "@/lib/facility-seo";
 
 export const directoryConfig = {
  ANIMAL_HOSPITAL:{ label:"동물병원", minimum:5 },
@@ -54,11 +55,11 @@ export function loadDirectory(type:FacilityKind,segments:string[],query:Record<s
 export async function directoryMetadata(type:FacilityKind,segments:string[],query:Record<string,string|string[]|undefined>={}):Promise<Metadata>{
  const data=await loadDirectory(type,segments,query); const {label,minimum}=directoryConfig[type];
  const region=regionKeywordName(data.region); const feature=data.route.feature?({"24h":"24시간",night:"야간",exotic:"특수동물"}[data.route.feature])+" ":"";
- const detailFacts=["위치",data.facility?.phone?"전화":null,"등록정보"].filter(Boolean).join("·");
- const title=data.facility?`${region} ${data.facility.name} | ${detailFacts}`:data.route.feature?`${region} ${feature}${label} ${(data.result?.total??0)}곳 | 확인된 운영정보`:regionalTitle(type,data.region,data.result!.stats);
+ const detailMetadata=data.facility?facilitySearchMetadata(data.facility):null;
+ const title=detailMetadata?detailMetadata.title:data.route.feature?`${region} ${feature}${label} ${(data.result?.total??0)}곳 | 확인된 운영정보`:regionalTitle(type,data.region,data.result!.stats);
  const ready=data.facility?Boolean(data.facility.name&&data.facility.roadAddress&&data.facility.regionSlug&&data.facility.businessStatus!=="UNKNOWN"):(data.result?.total??0)>=(data.route.feature==="24h"?2:data.route.feature?3:minimum);
  const canonical=data.facility?facilityPath(data.facility)!:`/${typePaths[type]}${segments.length?"/"+segments.join("/"):""}`;
- const description=data.facility?`${data.facility.name}의 공식 등록상태, 주소${data.facility.phone?", 전화번호":""}, 위치와 데이터 기준일을 확인하세요.`:data.route.feature?`${region}에서 근거와 유효기간이 확인된 ${feature}${label} ${(data.result?.total??0)}곳을 확인하세요.`:regionalDescription(type,data.region,data.result!.stats);
+ const description=detailMetadata?detailMetadata.description:data.route.feature?`${region}에서 근거와 유효기간이 확인된 ${feature}${label} ${(data.result?.total??0)}곳을 확인하세요.`:regionalDescription(type,data.region,data.result!.stats);
  return {title,description,alternates:{canonical},...shareMetadata(title,description,canonical),robots:previewRobotsPolicy()??{index:!isMockMode()&&ready&&!Object.keys(query).length&&await seoApproved(canonical),follow:true}};
 }
 export async function FacilityDirectory({type,segments,query={}}:{type:FacilityKind;segments:string[];query?:Record<string,string|string[]|undefined>}){
