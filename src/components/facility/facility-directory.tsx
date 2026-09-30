@@ -16,7 +16,7 @@ import { cache } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { PHARMACY_LIST_AD_AFTER_CARD, shouldInsertHospitalListAd, shouldInsertPharmacyListAd } from "@/components/ads/ad-placement-policy";
 import type { PageType } from "@/lib/seo";
-import { regionKeywordName, regionalDescription, regionalPrimaryKeyword, regionalSummary, regionalTitle } from "@/lib/regional-seo";
+import { regionKeywordName, regionalAncestors, regionalDescription, regionalPrimaryKeyword, regionalSummary, regionalTitle, regionalVisitGuide } from "@/lib/regional-seo";
 import { shareMetadata } from "@/lib/metadata";
 import { paginationPages } from "@/lib/pagination";
 import { NavigationLink } from "@/components/navigation/navigation-link";
@@ -71,6 +71,8 @@ export async function FacilityDirectory({type,segments,query={}}:{type:FacilityK
  const currentPath=base+(route.feature?`/${route.feature}`:"");
  const [regions,related]=await Promise.all([listRegions(),region?regionalJourney(region.fullSlug,currentPath):Promise.resolve([])]);
  const children=regions.filter(r=>(region?r.parentId===region.id:!r.parentId)&&(r[countKey]??0)>=directoryConfig[type].minimum);
+ const ancestors=regionalAncestors(region,regions);
+ const visitGuide=regionalVisitGuide(type,region,result!.stats);
  const synced=result!.stats.syncedAt;
  const regionalCostLink=related.find(link=>link.pageType==="COST_REGION");
  const pageType:PageType=type==="ANIMAL_HOSPITAL"?(route.feature==="24h"?"HOSPITAL_24H":route.feature==="night"?"HOSPITAL_NIGHT":route.feature==="exotic"?"HOSPITAL_EXOTIC":"HOSPITAL_REGION"):type==="ANIMAL_PHARMACY"?"PHARMACY_REGION":"FUNERAL_REGION";
@@ -85,7 +87,7 @@ export async function FacilityDirectory({type,segments,query={}}:{type:FacilityK
  const itemList={"@context":"https://schema.org","@type":"ItemList",name:`${primaryKeyword} 목록`,numberOfItems:result!.facilities.length,itemListElement:result!.facilities.flatMap((item,index)=>{const path=facilityPath(item);return path?[{"@type":"ListItem",position:index+1,name:item.name,url:new URL(path,process.env.NEXT_PUBLIC_SITE_URL||"https://pet.dudle.co.kr").href}]:[];})};
  return <div className="shell listing-page">
  <script type="application/ld+json" dangerouslySetInnerHTML={{__html:safeJson(itemList)}}/>
- <Breadcrumbs items={[{label:directoryConfig[type].label,href:`/${typePaths[type]}`},...(region?[{label:region.name}]:[])]}/><MockNotice/>
+ <Breadcrumbs items={[{label:directoryConfig[type].label,href:`/${typePaths[type]}`},...ancestors.map(parent=>({label:parent.name,href:`/${typePaths[type]}/${parent.fullSlug}`})),...(region?[{label:region.name,...(feature?{href:base}:{})}]:[]),...(feature?[{label:feature}]:[])]}/><MockNotice/>
  <div className="listing-header"><div><h1>{feature?`${name} ${feature} ${directoryConfig[type].label}`:primaryKeyword}</h1><p>{feature?"출처와 확인일이 있고 유효기간이 지나지 않은 검증정보만 표시합니다. 방문 전 전화로 진료 가능 여부를 확인하세요.":`${primaryKeyword} ${result!.total}곳의 주소·전화번호와 공식 등록상태를 확인할 수 있습니다.`}</p><p className="quality-note">공식정보 출처: 공공데이터포털 / 행정안전부 · 공식 데이터 기준일: {result!.stats.sourceDate??"미확인"} · 마지막 동기화: {synced??"확인된 데이터 없음"}</p></div><div className="count-box"><strong>{result!.total}</strong><span>공식 등록상 영업 시설</span></div></div>
  {children.length>0&&<div className="chip-list">{children.map(r=><NavigationLink className="chip-link" href={`/${typePaths[type]}/${r.fullSlug}`} key={r.id} prefetch={false}>{r.name}</NavigationLink>)}</div>}
  <div className="filter-bar"><NavigationLink href={base} prefetch={false}>전체</NavigationLink>{type==="ANIMAL_HOSPITAL"&&(["24h","night","exotic"] as const).map(f=><NavigationLink key={f} className={route.feature===f?"active":""} href={`${base}/${f}`} prefetch={false}>{{"24h":"24시간",night:"야간",exotic:"특수동물"}[f]}</NavigationLink>)}<NavigationLink href={`?sort=${query.sort==="name"?"quality":"name"}`} prefetch={false}>{query.sort==="name"?"정보 충실도순":"가나다순"}</NavigationLink></div>
@@ -94,5 +96,6 @@ export async function FacilityDirectory({type,segments,query={}}:{type:FacilityK
  {result!.total>30&&<nav className="chip-list" aria-label="페이지">{result!.page>1&&<NavigationLink className="chip-link" href={`?page=${result!.page-1}&sort=${query.sort==="name"?"name":"quality"}`} prefetch={false}>이전</NavigationLink>}{pageLinks.map(page=><NavigationLink aria-current={page===result!.page?"page":undefined} className="chip-link" href={`?page=${page}&sort=${query.sort==="name"?"name":"quality"}`} key={page} prefetch={false}>{page}</NavigationLink>)}{result!.page*30<result!.total&&<NavigationLink className="chip-link" href={`?page=${result!.page+1}&sort=${query.sort==="name"?"name":"quality"}`} prefetch={false}>다음</NavigationLink>}</nav>}
  {!feature&&<section className="card content-panel regional-summary" aria-labelledby="regional-summary-heading"><h2 id="regional-summary-heading">{primaryKeyword} 공식 데이터 요약</h2><p>{regionalSummary(type,region,result!.stats)}</p><dl className="info-grid"><div><dt>영업 시설</dt><dd>{result!.stats.total}곳</dd></div><div><dt>지도 표시 가능</dt><dd>{result!.stats.coordinateCount}곳</dd></div><div><dt>전화번호 확인</dt><dd>{result!.stats.phoneCount}곳</dd></div><div><dt>공식 데이터 기준일</dt><dd>{result!.stats.sourceDate??"미확인"}</dd></div></dl>{type==="ANIMAL_HOSPITAL"&&regionalCostLink&&<Link className="text-link" href={regionalCostLink.path}>{regionalCostLink.regionName} 동물병원 진료비 통계 확인{regionalCostLink.scope==="parent"?" (상위 지역)":""}</Link>}</section>}
  <RegionalJourney links={related}/>
+ {!feature&&result!.total>0&&<section className="card content-panel" aria-labelledby="regional-visit-heading"><h2 id="regional-visit-heading">{visitGuide.heading}</h2><p>{visitGuide.coverage}</p><ol>{visitGuide.steps.map(step=><li key={step}>{step}</li>)}</ol><p>목록의 시설명을 선택해 상세정보를 확인하고, 지도와 전화번호를 이용해 방문할 시설을 결정하세요. 확인되지 않은 24시간·야간·특수동물·주차 정보는 제공 사실로 단정하지 않습니다.</p></section>}
  </div>;
 }
