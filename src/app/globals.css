@@ -310,6 +310,9 @@ a[href]:active { opacity:.72; }
   .route-loading-grid { grid-template-columns:1fr; }
 }
 .fee-selectors { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; align-items:end; }
+.region-directory-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:.65rem 1.25rem; padding-left:1.25rem; }
+.region-directory-links li { min-width:0; overflow-wrap:anywhere; }
+.region-directory-links a { display:block; padding:.35rem 0; text-decoration:underline; text-underline-offset:.2rem; }
 .fee-selectors label { display:grid; gap:.4rem; min-width:0; }
 .fee-selectors select { width:100%; min-width:0; min-height:2.75rem; max-width:100%; padding:.65rem; border:1px solid #d9e2de; border-radius:.5rem; background:white; }
 .fee-price-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1rem; }

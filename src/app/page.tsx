@@ -77,6 +77,7 @@ export default function HomePage() {
             <span className="eyebrow">많이 찾는 지역</span>
             <h2>지역별 동물병원</h2>
             <p>공식 등록상 영업 시설이 충분한 주요 지역을 바로 확인하세요.</p>
+            <p><Link className="text-link" href="/regions" prefetch={false}>전국 모든 공개 지역의 병원·약국·장례·진료비 찾기<ArrowRight size={16} aria-hidden="true" /></Link></p>
             <div className="chip-list">{majorHospitalRegions.map(([label,href])=><Link className="chip-link" href={href} key={href} prefetch={false}>{label}</Link>)}</div>
           </div>
           <div className="card content-panel">
